@@ -1,16 +1,13 @@
-"""Command line entry point: `acquirer-engine run`.
+"""Command line entry point: `acquirer-engine run`."""
 
-For now this only checks the inputs and creates the run folder. The pipeline
-(intake, scoring, agents, report) plugs in where marked below as it is built.
-"""
-
-from datetime import datetime
+import asyncio
 from pathlib import Path
 
 import typer
 
 from acquirer_engine.cache import Mode
 from acquirer_engine.config import get_api_key, load_config
+from acquirer_engine.run import execute
 
 app = typer.Typer(add_completion=False, help="Find the most likely acquirers for a target.")
 
@@ -25,6 +22,8 @@ def run(
     text: str = typer.Option(None, help="The banker's request. Default: the one in config.yaml."),
     mode: Mode = typer.Option(Mode.live, help="live | replay | refresh | off"),
     config_path: Path = typer.Option(Path("config.yaml"), "--config", help="Settings file."),
+    cache: Path = typer.Option(None, help="Answer cache file. Default: paths.llm_cache in config."),
+    strict: bool = typer.Option(False, help="Stop on unexpected errors instead of falling back."),
 ) -> None:
     """Find the 10 most likely acquirers and write a one-page rationale for each."""
     config = load_config(config_path)
@@ -38,14 +37,19 @@ def run(
         )
         raise typer.Exit(code=1)
 
-    # One folder per run, named by start time, e.g. runs/20261021-143005.
-    run_dir = config.paths.runs_dir / datetime.now().strftime("%Y%m%d-%H%M%S")
-    run_dir.mkdir(parents=True, exist_ok=True)
+    typer.echo(f"Mode: {mode.value}\nRequest: {request}\n")
+    state, run_dir, report = asyncio.run(
+        execute(request, config, mode, cache or config.paths.llm_cache, strict)
+    )
 
-    typer.echo(f"Mode:    {mode.value}")
-    typer.echo(f"Request: {request}")
-    typer.echo(f"Output:  {run_dir}")
-
-    # Pipeline goes here: intake -> scoring -> coverage agents -> captain
-    # -> analysts -> validation -> report.
-    typer.echo("Pipeline not built yet.")
+    if report["stopped"]:
+        typer.echo(f"Stopped: {report['stopped']}")
+    for i, row in enumerate(report["final"], 1):
+        review = "  (needs review)" if row["needs_review"] else ""
+        typer.echo(f"{i:>2}. {row['buyer']:<28} {row['conviction']:<7}{review}")
+    for warning in report["warnings"] + report["flags"]:
+        typer.echo(f"Warning: {warning}")
+    total = report["tokens_total"]
+    typer.echo(f"\n{report['seconds']} s | {total['calls']} LLM calls ({total['cache_hits']} from cache) "
+               f"| tokens in {total['input']:,} / out {total['output']:,}")
+    typer.echo(f"Output: {run_dir}")

@@ -65,6 +65,7 @@ class Validation(Section):
     page_words_max: int
     banned_phrases: list[str]
     max_thesis_similarity: float
+    rewrite_min_seconds: float
 
 
 class Profile(Section):
@@ -96,6 +97,7 @@ class LLM(Section):
     max_concurrency: int
     retries: Retries
     timeouts_seconds: Timeouts
+    run_budget_seconds: float
 
 
 class Config(Section):

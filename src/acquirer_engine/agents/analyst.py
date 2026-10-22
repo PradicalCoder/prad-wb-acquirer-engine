@@ -39,7 +39,7 @@ async def run_analyst(
     try:
         notes = await _plan(agent, pack_json, client, cfg, deadline)
         return await _write(agent, pack, pack_json, notes, client, cfg, deadline)
-    except LLMUnavailable as error:
+    except (LLMUnavailable, LLMOutputInvalid) as error:  # expected: model down, or notes unusable
         log.warning("analyst.fallback", agent=agent, reason=str(error))
         return AnalystResult(page=fallback_page(pack), notes=None, repairs=0,
                              errors=[str(error)], fallback=True)
@@ -63,7 +63,16 @@ async def _plan(agent, pack_json, client, cfg, deadline) -> AnalystNotes:
                                        prompt_version=version, deadline=deadline)
 
 
-async def _write(agent, pack, pack_json, notes, client, cfg, deadline) -> AnalystResult:
+async def revise(result: AnalystResult, pack: EvidencePack, feedback: str, client: LLMClient,
+                 cfg: Config, deadline: float) -> AnalystResult:
+    """Write the page again from the same notes, with one extra instruction
+    (used when its fit thesis reads too much like another buyer's)."""
+    agent = f"analyst:{pack.buyer}"
+    return await _write(agent, pack, pack.model_dump_json(exclude_none=True), result.notes,
+                        client, cfg, deadline, extra=feedback)
+
+
+async def _write(agent, pack, pack_json, notes, client, cfg, deadline, extra=None) -> AnalystResult:
     """Steps 2-4: write, check, repair; fall back if it still fails."""
     rules = cfg.validation
     version, system = load_prompt(
@@ -72,9 +81,10 @@ async def _write(agent, pack, pack_json, notes, client, cfg, deadline) -> Analys
         # Ask for the middle of the allowed range, so small misses still pass.
         words_min=rules.page_words_min + 50, words_max=rules.page_words_max - 50,
     )
+    instruction = "Write the page." + (f"\n\n{extra}" if extra else "")
     messages = [{"role": "user", "content": f"Evidence pack:\n{pack_json}\n\n"
                                             f"Your notes:\n{notes.model_dump_json()}\n\n"
-                                            f"Write the page."}]
+                                            f"{instruction}"}]
     errors: list[str] = []
     for attempt in range(rules.max_repairs + 1):
         try:

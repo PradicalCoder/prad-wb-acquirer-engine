@@ -200,6 +200,9 @@ validation:
   # Two pages whose fit theses are this similar (0 = no shared words,
   # 1 = identical) read like copies; both are sent back.
   max_thesis_similarity: 0.5
+  # The lower-ranked page of a too-similar pair is rewritten only if at least
+  # this many seconds of the run budget remain; otherwise both are flagged.
+  rewrite_min_seconds: 10
 
 
 # ---------------------------------------------------------------------------
@@ -265,4 +268,9 @@ llm:
     intake: 10
     coverage: 20
     captain: 10
-    analyst: 20
+    analyst: 25      # notes + write; room for one repair
+
+  # Time limit for the whole run. Every step's deadline is the earlier of its
+  # own limit above and the time left in this budget, so a slow early step
+  # can't push the run past it: later steps fall back instead.
+  run_budget_seconds: 55

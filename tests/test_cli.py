@@ -30,12 +30,17 @@ def test_live_without_key_fails_with_hint(monkeypatch):
     assert "--mode replay" in result.output
 
 
-def test_replay_runs_without_key(tmp_path, monkeypatch):
+def test_replay_with_empty_cache_still_finishes(tmp_path, monkeypatch):
+    """No key and nothing recorded: every LLM step falls back, and the run still
+    produces 10 evidence-only pages and the full run folder."""
     monkeypatch.setattr("acquirer_engine.cli.get_api_key", lambda: None)
-    # Copy the config into a temp folder so the run folder lands there, not in runs/.
+    # Copy config and data into a temp folder so the run folder lands there, not in runs/.
     shutil.copy(CONFIG, tmp_path / "config.yaml")
+    shutil.copytree(ROOT / "data", tmp_path / "data")
 
     result = runner.invoke(app, ["run", "--mode", "replay", "--config", str(tmp_path / "config.yaml")])
 
-    assert result.exit_code == 0
-    assert len(list((tmp_path / "runs").iterdir())) == 1
+    assert result.exit_code == 0, result.output
+    assert result.output.count("needs review") == 10
+    (run_dir,) = (tmp_path / "runs").iterdir()
+    assert {p.name for p in run_dir.iterdir()} == {"report.md", "run_report.json", "state.json", "run.log"}

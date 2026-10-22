@@ -175,6 +175,34 @@ scoring:
 
 
 # ---------------------------------------------------------------------------
+# validation: code checks on every one-page rationale before it ships.
+# A failed page goes back to the analyst with the errors (at most
+# max_repairs times), then ships as an evidence-only page marked for review.
+# ---------------------------------------------------------------------------
+validation:
+  max_repairs: 2
+  # Prose length per page, all sections together. Target is 350-450 words;
+  # the slack stops wording alone from triggering a repair.
+  page_words_min: 300
+  page_words_max: 500
+  # Phrases that could describe any buyer. A page using one is sent back.
+  banned_phrases:
+    - leading
+    - well-positioned
+    - well positioned
+    - track record of strategic acquisitions
+    - proven track record
+    - strong track record
+    - best-in-class
+    - world-class
+    - synergistic
+    - uniquely positioned
+  # Two pages whose fit theses are this similar (0 = no shared words,
+  # 1 = identical) read like copies; both are sent back.
+  max_thesis_similarity: 0.5
+
+
+# ---------------------------------------------------------------------------
 # llm: model choice and how calls behave. Read by the LLM client and the
 # graph's node wrapper.
 # ---------------------------------------------------------------------------

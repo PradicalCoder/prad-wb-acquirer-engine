@@ -59,6 +59,14 @@ class Scoring(Section):
     recent_year: int
 
 
+class Validation(Section):
+    max_repairs: int
+    page_words_min: int
+    page_words_max: int
+    banned_phrases: list[str]
+    max_thesis_similarity: float
+
+
 class Profile(Section):
     """How one kind of LLM call is made (see the comments in config.yaml)."""
 
@@ -95,6 +103,7 @@ class Config(Section):
     default_banker_text: str
     default_target: TargetProfile  # same model the intake agent produces
     scoring: Scoring
+    validation: Validation
     llm: LLM
 
 

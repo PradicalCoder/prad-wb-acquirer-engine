@@ -42,6 +42,7 @@ class Scoring(Section):
     margin_weak: float
     recency_steps: list[tuple[int, float]]  # (up to N years old, weight)
     recency_old: float
+    min_estimate_peers: int
     top_n_comps: int
     pool_size: int
     mix_pe: int

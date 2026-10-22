@@ -133,6 +133,9 @@ scoring:
   recency_old: 0.6
 
   # --- Valuation ----------------------------------------------------------
+  # Target revenue and EBITDA are estimated from peer deals (same sector and
+  # margin band). Fewer peers than this -> the estimate is marked low confidence.
+  min_estimate_peers: 5
   # The valuation comps table is the N most relevant closed deals.
   # Median EV/Revenue and EV/EBITDA are taken from these rows.
   top_n_comps: 20

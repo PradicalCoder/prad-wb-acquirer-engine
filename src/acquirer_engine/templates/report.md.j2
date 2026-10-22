@@ -1,0 +1,142 @@
+# Likely acquirers
+
+> {{ request }}
+
+{% if stopped %}
+**Stopped:** {{ stopped }}
+{% else %}
+**{{ headline }}**
+
+{% for w in warnings %}
+> Warning: {{ w }}
+{% endfor %}
+
+## Target
+
+| Sector | Enterprise value | Ownership | Region | Margins |{% if estimate %} Revenue / EBITDA (estimated) |{% endif %}
+
+|---|---|---|---|---|{% if estimate %}---|{% endif %}
+
+| {{ target.sector }} | {{ target.ev_mm | money }} | {{ target.ownership | join(', ') if target.ownership else 'not stated' }} | {{ target.region or 'not stated' }} | {{ target.margin_band or 'not stated' }} (vs sector) |{% if estimate %} {{ estimate.revenue_mm | money }} / {{ estimate.ebitda_mm | money }} ({{ estimate.peer_ids | length }} peers) |{% endif %}
+
+
+## The ten most likely acquirers
+
+| # | Acquirer | Type | Conviction | Best precedent | Relevance | Key risk |
+|---|---|---|---|---|---|---|
+{% for b in buyers %}
+| {{ b.rank }} | **{{ b.name }}** | {{ b.type }} | {{ b.conviction }} | {{ b.best.transaction_id }} {{ b.best.target_company }} | {{ '%.2f' % b.best.relevance }} | {{ b.key_risk }} |
+{% endfor %}
+
+## Valuation context
+
+EV/Revenue of the {{ comps_rows | length }} most relevant closed deals: **{{ comps.ev_revenue.median | multiple }}** (middle half {{ comps.ev_revenue.q1 | multiple }}–{{ comps.ev_revenue.q3 | multiple }}). EV/EBITDA {{ comps.ev_ebitda_calc.median | multiple }} calculated vs {{ comps.ev_ebitda_stated.median | multiple }} stated. By buyer type: {% for t, v in comps.ev_revenue_by_type.items() %}{{ t }} {{ v | multiple }}{% if not loop.last %}, {% endif %}{% endfor %}.
+
+EV/Revenue is the primary anchor: in this dataset revenue-based figures are internally consistent, while stated EBITDA multiples often differ from deal size ÷ EBITDA.
+
+## What the agents changed from the plain ranking
+
+{% for c in changes %}
+- **{{ c.buyer }}** {{ c.change }}: {{ c.reason }}
+{% else %}
+Nothing: the agents kept the ranking's picks.
+{% endfor %}
+{% if alternates %}
+
+_Next in line: {{ alternates | join(', ') }}_
+{% endif %}
+{% endif %}
+{% for b in buyers %}
+{% set p = b.page %}{% set pk = b.pack %}{% set pr = pk.profile %}
+
+---
+
+## {{ b.rank }}. {{ b.name }} · {{ 'Financial sponsor' if b.type == 'PE' else 'Strategic' }} · {{ b.conviction }} conviction
+
+{{ pr.deals }} deals ({{ pr.first_year }}–{{ pr.latest_year }}) · typical size {{ pr.typical_size_mm | money }} · {{ pr.strong_deals }} strong precedents · rank {{ pr.rank_in_type }} among {{ 'PE firms' if b.type == 'PE' else 'strategics' }}
+{% if p.needs_review %}
+
+> **Needs review.** Assembled from the evidence only; the written analysis was not available for this buyer.
+{% endif %}
+
+**Acquirer overview.** {{ p.overview }}
+
+**Strategic fit thesis.** {{ p.fit_thesis }}{% if pk.theses %} _({{ pk.theses | join('; ') }})_{% endif %}
+
+
+**Precedent activity.** {{ p.precedent_note }}
+
+| Deal | Target | Year | Sector | Type | Size | EV/Rev | EV/EBITDA calc · stated | Relevance |
+|---|---|---|---|---|---|---|---|---|
+{% for d in pk.top_deals %}
+| {{ d.transaction_id }} | {{ d.target_company }} | {{ d.year }} | {{ d.sector }} | {{ d.deal_type }}{% if d.outcome != 'Closed' %} ({{ d.outcome | lower }}){% endif %} | {{ d.size_mm | money }} | {{ d.ev_revenue | multiple }} | {{ d.ev_ebitda_calc | multiple }} · {{ d.ev_ebitda_stated | multiple }} | {{ '%.2f' % d.relevance }} |
+{% endfor %}
+
+**Valuation context.** {{ p.valuation_note }}
+
+| EV / Revenue | Median | Middle half |
+|---|---|---|
+| Comparable closed deals | {{ pk.comps.ev_revenue.median | multiple }} | {{ pk.comps.ev_revenue.q1 | multiple }}–{{ pk.comps.ev_revenue.q3 | multiple }} |
+| {{ 'PE buyers' if b.type == 'PE' else 'Strategic buyers' }} in the comps | {{ pk.type_median_ev_revenue | multiple }} | – |
+| {{ b.name }}, {{ pk.paid.closed_deals }} closed deals | {{ pk.paid.ev_revenue | multiple }} | – |
+
+**Risk flags.**
+
+{% for lens, risks in b.risks_by_lens %}
+{% for r in risks %}
+- _{{ lens }}, {{ 'flagged' if r.status == 'fired' else 'watch' }}_ · **{{ r.name | replace('_', ' ') | capitalize }}.** {{ r.text }}{% if r.evidence_ids %} ({{ r.evidence_ids | join(', ') }}){% endif %}
+
+{% endfor %}
+{% endfor %}
+
+**Conviction: {{ b.conviction }}.** {{ p.conviction.rationale }}
+_Rule: willingness {{ pk.conviction.willingness }} ({{ pk.conviction.strong_deal_count }} strong precedents{% if pk.conviction.latest_strong_year %}, latest {{ pk.conviction.latest_strong_year }}{% endif %}) × ability {{ pk.conviction.ability }} ({{ pk.conviction.ability_risk_count }} risks flagged)._
+{% if p.public_knowledge %}
+
+> Public knowledge, not from the deal data: {{ p.public_knowledge | join(' ') }}
+{% endif %}
+{% endfor %}
+{% if not stopped %}
+
+---
+
+## Appendix: how the list was built
+
+### Valuation comps
+
+| Deal | Target | Acquirer | Type | Year | Size | EV/Rev | EV/EBITDA calc · stated | Relevance |
+|---|---|---|---|---|---|---|---|---|
+{% for c in comps_rows %}
+| {{ c.transaction_id }} | {{ c.target_company }} | {{ c.acquirer }} | {{ c.buyer_type }} | {{ c.deal_year }} | {{ c.deal_size_mm | money }} | {{ c.ev_revenue_calc | multiple }} | {{ c.ev_ebitda_calc | multiple }} · {{ c.ev_ebitda_multiple | multiple }} | {{ '%.2f' % c.relevance }} |
+{% endfor %}
+{% for pool in coverage %}
+
+### {{ 'Financial sponsor' if pool.buyer_type == 'PE' else 'Strategic' }} coverage{% if pool.fallback %} (ranking used: agent unavailable){% endif %}
+
+
+{% for t in pool.thesis_log %}
+- **{{ t.thesis_id }}** {{ 'kept' if t.kept else 'dropped' }}{% if t.get('refined') %} (refined){% endif %}: {{ t.reason }}{% if t.get('buyers_found') %} _Found: {{ t.buyers_found | join(', ') }}._{% endif %}
+
+{% endfor %}
+{% if pool.pool %}{% for r in pool.pool.removals %}
+- **Screened out {{ r.acquirer }}:** {{ r.reason }} ({{ r.evidence_ids | join(', ') }})
+{% endfor %}{% endif %}
+{% if pool.topped_up %}
+- Added from the ranking to fill the pool: {{ pool.topped_up | join(', ') }}.
+{% endif %}
+{% endfor %}
+{% if public_knowledge %}
+
+### Public knowledge used in screening (not from the deal data)
+
+{% for claim in public_knowledge %}
+- {{ claim }}
+{% endfor %}
+{% endif %}
+
+### Run
+
+{% for s in steps %}{{ s.node | replace('_', ' ') }} {{ s.seconds }} s{% if s.status != 'ok' %} ({{ s.status }}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+
+Total {{ seconds }} s · {{ tokens.calls }} model calls ({{ tokens.cache_hits }} replayed) · {{ '{:,}'.format(tokens.input) }} input / {{ '{:,}'.format(tokens.output) }} output tokens.
+{% endif %}

@@ -1,7 +1,8 @@
 """Run the engine once and write the run folder.
 
 runs/<timestamp>/
-  report.md        the pages, in final order (plain Markdown until the HTML report exists)
+  report.html      the report: cover summary, one printable page per buyer, appendix
+  report.md        the same report in Markdown
   run_report.json  per step: status and seconds; per call type: tokens; fallbacks, flags
   state.json       what each step produced (minus the big scoring tables)
   run.log          every event as one JSON line
@@ -15,12 +16,12 @@ from pathlib import Path
 
 import structlog
 
-from acquirer_engine.agents.analyst import page_markdown
 from acquirer_engine.cache import AnswerCache, Mode
 from acquirer_engine.config import Config, get_api_key
 from acquirer_engine.data import load_deals
 from acquirer_engine.graph import Run, RunState, build_graph
 from acquirer_engine.llm import LLMClient
+from acquirer_engine.render import render
 
 
 async def execute(text: str, cfg: Config, mode: Mode, cache_path: Path, strict: bool = False,
@@ -42,7 +43,9 @@ async def execute(text: str, cfg: Config, mode: Mode, cache_path: Path, strict: 
 
         report = run_report(state, client, mode, seconds)
         (run_dir / "run_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-        (run_dir / "report.md").write_text(report_markdown(state, report), encoding="utf-8")
+        html, markdown = render(state, report, cfg)
+        (run_dir / "report.html").write_text(html, encoding="utf-8")
+        (run_dir / "report.md").write_text(markdown, encoding="utf-8")
         (run_dir / "state.json").write_text(json.dumps(_snapshot(state), indent=2, default=str),
                                             encoding="utf-8")
         return state, run_dir, report
@@ -101,28 +104,6 @@ def run_report(state: RunState, client: LLMClient, mode: Mode, seconds: float) -
         "tokens_total": {k: sum(row[k] for row in tokens.values())
                          for k in ("calls", "cache_hits", "input", "output", "cache_read")},
     }
-
-
-def report_markdown(state: RunState, report: dict) -> str:
-    lines = ["# Likely acquirers", f"_Request: {state['banker_text']}_"]
-    if report["stopped"]:
-        return "\n\n".join(lines + [f"**Stopped:** {report['stopped']}"])
-    lines += [f"_Run: {report['seconds']} s, mode {report['mode']}_"]
-    lines += [f"> Warning: {w}" for w in report["warnings"] + report["flags"]]
-    lines.append("| # | Buyer | Conviction | Review |\n|---|---|---|---|")
-    lines[-1] += "".join(f"\n| {i} | {row['buyer']} | {row['conviction']} | "
-                         f"{'needs review' if row['needs_review'] else ''} |"
-                         for i, row in enumerate(report["final"], 1))
-    changes = [f"- **{d['buyer']}** {d['change']}: {d['reason']}" for d in report["agent_vs_baseline"]]
-    lines.append("### What the agents changed from the plain ranking\n"
-                 + ("\n".join(changes) if changes else "Nothing: the agents kept the ranking's picks."))
-    if report["alternates"]:
-        lines.append(f"_Next in line: {', '.join(report['alternates'])}_")
-    if report["public_knowledge_in_screening"]:
-        lines.append("### Public knowledge used in screening (not from the data)\n"
-                     + "\n".join(f"- {claim}" for claim in report["public_knowledge_in_screening"]))
-    lines += [page_markdown(state["results"][b]) for b in state["final_order"]]
-    return "\n\n".join(lines)
 
 
 def _snapshot(state: RunState) -> dict:

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Likely Acquirers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #004165; --deep: #00578f; --blue: #007ac9; --green: #005e48;
+    --ink: #0a0a0a; --muted: #686868; --rule: #d4d4d4; --fill: #efefef;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f4f5f6; color: var(--ink); font: 400 9.5pt/1.45 "Source Sans 3", Helvetica, Arial, sans-serif; }
+  .page { background: #fff; max-width: 8.5in; margin: 24px auto; padding: 0.55in 0.6in; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  h1, h2 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; color: var(--navy); margin: 0; }
+  h1 { font-size: 26pt; line-height: 1.1; color: #fff; }
+  h2 { font-size: 19pt; }
+  .label { margin: 14px 0 4px; padding-bottom: 3px; border-bottom: 1px solid var(--rule);
+           font: 700 7.5pt/1 "Source Sans 3", sans-serif; text-transform: uppercase; letter-spacing: .1rem; color: var(--deep); }
+  .eyebrow { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .1rem; color: var(--blue); }
+  p { margin: 0 0 6px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8pt; }
+  a, .id { color: var(--deep); }
+  .id { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8pt; font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
+  th { text-align: left; font-weight: 700; color: var(--navy); border-bottom: 2px solid var(--blue); padding: 3px 5px; }
+  td { padding: 3px 5px; border-bottom: 1px solid var(--fill); vertical-align: top; }
+  td.num, th.num { text-align: right; }
+  tbody tr:nth-child(even) td { background: #fafbfc; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 2px; color: #fff; font-size: 7.5pt;
+           font-weight: 700; text-transform: uppercase; letter-spacing: .08rem; }
+  .badge.High { background: var(--green); } .badge.Medium { background: var(--deep); } .badge.Low { background: var(--muted); }
+  .tag { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); border-radius: 2px; font-size: 7.5pt; color: var(--muted); }
+
+  /* cover */
+  .band { background: var(--navy); color: #fff; margin: -0.55in -0.6in 18px; padding: 0.5in 0.6in 0.35in; }
+  .band .eyebrow { color: #9fd3f5; }
+  .band .sub { color: #d6e6f2; margin-top: 8px; font-size: 10.5pt; }
+  .request { font-family: "Source Serif 4", Georgia, serif; font-style: italic; color: var(--muted); border-left: 3px solid var(--blue); padding-left: 10px; }
+  .headline { font-size: 11pt; font-weight: 600; color: var(--navy); margin: 10px 0 4px; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 18px; margin: 6px 0; }
+  .facts div span { display: block; font-size: 7pt; text-transform: uppercase; letter-spacing: .08rem; color: var(--muted); }
+  .facts div b { font-weight: 600; }
+  .note { background: var(--fill); padding: 6px 9px; border-left: 3px solid var(--deep); font-size: 8.5pt; margin: 6px 0; }
+  .warn { border-left-color: #b26b00; }
+  ul.tight { margin: 2px 0 6px; padding-left: 16px; } ul.tight li { margin-bottom: 2px; }
+
+  /* buyer pages */
+  .buyer-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--navy); padding-bottom: 8px; }
+  .strip { display: flex; gap: 18px; margin: 8px 0 2px; font-size: 8pt; color: var(--muted); }
+  .strip b { color: var(--ink); font-weight: 600; }
+  .review { background: #fff4e0; border-left: 3px solid #b26b00; padding: 5px 9px; margin-top: 8px; font-size: 8.5pt; }
+  .lens { font-weight: 700; color: var(--navy); font-size: 8pt; text-transform: uppercase; letter-spacing: .06rem; margin-top: 4px; }
+  .risk { margin: 2px 0 4px; } .risk .status { font-size: 7pt; font-weight: 700; text-transform: uppercase; }
+  .fired { color: #a03a1c; } .watch { color: var(--muted); }
+  .pk { font-size: 7.5pt; color: var(--muted); border-top: 1px solid var(--rule); margin-top: 10px; padding-top: 4px; }
+  footer { font-size: 7pt; color: var(--muted); margin-top: 12px; }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; max-width: none; padding: 0; page-break-after: always; break-after: page; }
+    .band { margin: 0 0 16px; }
+    @page { size: letter; margin: 0.45in 0.5in; }
+  }
+  @media (max-width: 640px) {
+    .page { margin: 0; padding: 16px; }
+    .band { margin: -16px -16px 14px; padding: 24px 16px; }
+    .facts { grid-template-columns: 1fr 1fr; }
+    .buyer-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+{# ============================== COVER ============================== #}
+<section class="page cover">
+  <div class="band">
+    <div class="eyebrow">Buyer analysis</div>
+    <h1>Likely acquirers</h1>
+    {% if not stopped %}
+    <div class="sub">{{ target.sector }} · {{ target.ev_mm | money }} enterprise value{% if target.ownership %} · private{% endif %}{% if target.margin_band %} · {{ target.margin_band }} EBITDA margins{% endif %}</div>
+    {% endif %}
+  </div>
+
+  <p class="request">“{{ request }}”</p>
+
+  {% if stopped %}
+  <div class="note warn"><b>Stopped.</b> {{ stopped }}</div>
+  {% else %}
+  <p class="headline">{{ headline }}</p>
+  {% for w in warnings %}<div class="note warn">{{ w }}</div>{% endfor %}
+
+  <h3 class="label">Target</h3>
+  <div class="facts">
+    <div><span>Sector</span><b>{{ target.sector }}</b></div>
+    <div><span>Enterprise value</span><b>{{ target.ev_mm | money }}</b></div>
+    <div><span>Ownership</span><b>{{ target.ownership | join(', ') if target.ownership else 'not stated' }}</b></div>
+    <div><span>Region</span><b>{{ target.region or 'not stated' }}</b></div>
+    <div><span>Margins</span><b>{{ target.margin_band or 'not stated' }} (vs sector)</b></div>
+    {% if estimate %}
+    <div><span>Revenue / EBITDA (estimated)</span><b>{{ estimate.revenue_mm | money }} / {{ estimate.ebitda_mm | money }}</b>
+      <span class="small">from {{ estimate.peer_ids | length }} sector peers{% if estimate.low_confidence %}, low confidence{% endif %}</span></div>
+    {% endif %}
+  </div>
+
+  <h3 class="label">The ten most likely acquirers</h3>
+  <table>
+    <thead><tr><th>#</th><th>Acquirer</th><th>Type</th><th>Conviction</th><th>Best precedent</th><th class="num">Relevance</th><th>Key risk</th></tr></thead>
+    <tbody>
+    {% for b in buyers %}
+      <tr><td>{{ b.rank }}</td><td><b>{{ b.name }}</b></td><td>{{ b.type }}</td>
+          <td><span class="badge {{ b.conviction }}">{{ b.conviction }}</span></td>
+          <td><span class="id">{{ b.best.transaction_id }}</span> {{ b.best.target_company }}</td>
+          <td class="num">{{ '%.2f' % b.best.relevance }}</td><td>{{ b.key_risk }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context: {{ comps_rows | length }} most relevant closed deals</h3>
+  <div class="facts">
+    <div><span>EV / Revenue (median, middle half)</span><b>{{ comps.ev_revenue.median | multiple }}</b> ({{ comps.ev_revenue.q1 | multiple }}–{{ comps.ev_revenue.q3 | multiple }})</div>
+    <div><span>EV / EBITDA calculated vs stated</span><b>{{ comps.ev_ebitda_calc.median | multiple }}</b> vs {{ comps.ev_ebitda_stated.median | multiple }}</div>
+    <div><span>EV / Revenue by buyer type</span>{% for t, v in comps.ev_revenue_by_type.items() %}<b>{{ t }} {{ v | multiple }}</b>{% if not loop.last %} · {% endif %}{% endfor %}</div>
+  </div>
+  <p class="small muted">EV/Revenue is the primary anchor: in this dataset revenue-based figures are internally consistent, while stated EBITDA multiples often differ from deal size ÷ EBITDA.</p>
+
+  <h3 class="label">What the agents changed from the plain ranking</h3>
+  {% if changes %}
+  <ul class="tight">{% for c in changes %}<li><b>{{ c.buyer }}</b> {{ c.change }}: {{ c.reason }}</li>{% endfor %}</ul>
+  {% else %}<p>Nothing: the agents kept the ranking's picks.</p>{% endif %}
+  {% if alternates %}<p class="small"><b>Next in line:</b> {{ alternates | join(', ') }}</p>{% endif %}
+  {% endif %}
+</section>
+
+{# ============================== ONE PAGE PER BUYER ============================== #}
+{% for b in buyers %}
+{% set p = b.page %}{% set pk = b.pack %}{% set pr = pk.profile %}
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer {{ b.rank }} of {{ buyers | length }} · {{ 'Financial sponsor' if b.type == 'PE' else 'Strategic' }}</div>
+      <h2>{{ b.name }}</h2>
+    </div>
+    <span class="badge {{ b.conviction }}">{{ b.conviction }} conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>{{ pr.deals }}</b> deals ({{ pr.first_year }}–{{ pr.latest_year }})</span>
+    <span>typical size <b>{{ pr.typical_size_mm | money }}</b></span>
+    <span><b>{{ pr.strong_deals }}</b> strong precedents</span>
+    <span>rank <b>{{ pr.rank_in_type }}</b> among {{ 'PE firms' if b.type == 'PE' else 'strategics' }}</span>
+  </div>
+  {% if p.needs_review %}<div class="review"><b>Needs review.</b> Assembled from the evidence only; the written analysis was not available for this buyer.</div>{% endif %}
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>{{ p.overview }}</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>{{ p.fit_thesis }}</p>
+  {% if pk.theses %}<p>{% for t in pk.theses %}<span class="tag">{{ t }}</span> {% endfor %}</p>{% endif %}
+
+  <h3 class="label">Precedent activity</h3>
+  <p>{{ p.precedent_note }}</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+    {% for d in pk.top_deals %}
+      <tr><td class="id">{{ d.transaction_id }}</td><td>{{ d.target_company }}</td><td>{{ d.year }}</td><td>{{ d.sector }}</td>
+          <td>{{ d.deal_type }}{% if d.outcome != 'Closed' %} <span class="muted">({{ d.outcome | lower }})</span>{% endif %}</td>
+          <td class="num">{{ d.size_mm | money }}</td><td class="num">{{ d.ev_revenue | multiple }}</td>
+          <td class="num">{{ d.ev_ebitda_calc | multiple }} · {{ d.ev_ebitda_stated | multiple }}</td><td class="num">{{ '%.2f' % d.relevance }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>{{ p.valuation_note }}</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">{{ pk.comps.ev_revenue.median | multiple }}</td><td class="num">{{ pk.comps.ev_revenue.q1 | multiple }}–{{ pk.comps.ev_revenue.q3 | multiple }}</td></tr>
+      <tr><td>{{ 'PE buyers' if b.type == 'PE' else 'Strategic buyers' }} in the comps</td><td class="num">{{ pk.type_median_ev_revenue | multiple }}</td><td class="num">–</td></tr>
+      <tr><td>{{ b.name }}, {{ pk.paid.closed_deals }} closed deals</td><td class="num">{{ pk.paid.ev_revenue | multiple }}</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+  {% for lens, risks in b.risks_by_lens %}
+    <div class="lens">{{ lens }}</div>
+    {% for r in risks %}
+    <p class="risk"><span class="status {{ r.status }}">{{ 'Flagged' if r.status == 'fired' else 'Watch' }}</span>
+       · <b>{{ r.name | replace('_', ' ') | capitalize }}.</b> {{ r.text }}
+       {% if r.evidence_ids %}<span class="small id">{{ r.evidence_ids | join(', ') }}</span>{% endif %}</p>
+    {% endfor %}
+  {% endfor %}
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge {{ b.conviction }}">{{ b.conviction }}</span> {{ p.conviction.rationale }}</p>
+  <p class="small muted">Rule: willingness {{ pk.conviction.willingness }} ({{ pk.conviction.strong_deal_count }} strong precedents{% if pk.conviction.latest_strong_year %}, latest {{ pk.conviction.latest_strong_year }}{% endif %}) × ability {{ pk.conviction.ability }} ({{ pk.conviction.ability_risk_count }} risks flagged).</p>
+
+  {% if p.public_knowledge %}
+  <div class="pk">Public knowledge, not from the deal data: {{ p.public_knowledge | join(' ') }}</div>
+  {% endif %}
+</section>
+{% endfor %}
+
+{# ============================== APPENDIX ============================== #}
+{% if not stopped %}
+<section class="page appendix">
+  <div class="eyebrow">Appendix</div>
+  <h2>How the list was built</h2>
+
+  <h3 class="label">Valuation comps</h3>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Acquirer</th><th>Type</th><th>Year</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+    {% for c in comps_rows %}
+      <tr><td class="id">{{ c.transaction_id }}</td><td>{{ c.target_company }}</td><td>{{ c.acquirer }}</td><td>{{ c.buyer_type }}</td><td>{{ c.deal_year }}</td>
+          <td class="num">{{ c.deal_size_mm | money }}</td><td class="num">{{ c.ev_revenue_calc | multiple }}</td>
+          <td class="num">{{ c.ev_ebitda_calc | multiple }} · {{ c.ev_ebitda_multiple | multiple }}</td><td class="num">{{ '%.2f' % c.relevance }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% for pool in coverage %}
+  <h3 class="label">{{ 'Financial sponsor' if pool.buyer_type == 'PE' else 'Strategic' }} coverage{% if pool.fallback %} (ranking used: agent unavailable){% endif %}</h3>
+  {% for t in pool.thesis_log %}
+    <p class="small"><b>{{ t.thesis_id }}</b> {{ 'kept' if t.kept else 'dropped' }}{% if t.get('refined') %} (refined){% endif %}: {{ t.reason }}{% if t.get('buyers_found') %} <span class="muted">Found: {{ t.buyers_found | join(', ') }}.</span>{% endif %}</p>
+  {% endfor %}
+  {% if pool.pool and pool.pool.removals %}
+    <ul class="tight small">{% for r in pool.pool.removals %}<li><b>Screened out {{ r.acquirer }}:</b> {{ r.reason }} <span class="id">{{ r.evidence_ids | join(', ') }}</span></li>{% endfor %}</ul>
+  {% endif %}
+  {% if pool.topped_up %}<p class="small">Added from the ranking to fill the pool: {{ pool.topped_up | join(', ') }}.</p>{% endif %}
+  {% endfor %}
+
+  {% if public_knowledge %}
+  <h3 class="label">Public knowledge used in screening (not from the deal data)</h3>
+  <ul class="tight small">{% for claim in public_knowledge %}<li>{{ claim }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  <h3 class="label">Run</h3>
+  <p class="small">{% for s in steps %}{{ s.node | replace('_', ' ') }} {{ s.seconds }} s{% if s.status != 'ok' %} ({{ s.status }}){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  <p class="small muted">Total {{ seconds }} s · {{ tokens.calls }} model calls ({{ tokens.cache_hits }} replayed) · {{ '{:,}'.format(tokens.input) }} input / {{ '{:,}'.format(tokens.output) }} output tokens.</p>
+</section>
+{% endif %}
+
+</body>
+</html>

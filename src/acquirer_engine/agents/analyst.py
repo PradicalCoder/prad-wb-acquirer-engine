@@ -8,8 +8,6 @@
      evidence-only page built from the pack, marked "needs review".
 """
 
-import json
-
 import structlog
 from pydantic import BaseModel
 
@@ -140,19 +138,3 @@ def _value_text(risk) -> str:
     if risk.count is not None:
         return f"{risk.count} of {risk.out_of} deals"
     return "no value" if risk.value is None else f"{risk.value:.2f}"
-
-
-# --- Temporary Markdown view (until the report renderer exists) --------------------
-
-def page_markdown(result: AnalystResult) -> str:
-    page = result.page
-    lines = [f"## {page.acquirer}" + ("  _(needs review)_" if page.needs_review else ""),
-             f"**Overview.** {page.overview}", f"**Strategic fit.** {page.fit_thesis}",
-             f"**Precedent activity.** {page.precedent_note}",
-             f"**Valuation context.** {page.valuation_note}", "**Risk flags.**"]
-    lines += [f"- *{r.lens} ({r.status})*, {r.name}: {r.text} {' '.join(r.evidence_ids)}"
-              for r in page.risks]
-    lines.append(f"**Conviction: {page.conviction.level}.** {page.conviction.rationale}")
-    lines += [f"> Public knowledge, not from the data: {claim}" for claim in page.public_knowledge]
-    lines.append(f"\n_repairs: {result.repairs}, errors left: {json.dumps(result.errors)}_")
-    return "\n\n".join(lines)

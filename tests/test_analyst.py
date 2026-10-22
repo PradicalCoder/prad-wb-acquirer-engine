@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from acquirer_engine.agents.analyst import fallback_page, page_markdown, run_analyst
+from acquirer_engine.agents.analyst import fallback_page, run_analyst
 from acquirer_engine.config import load_config
 from acquirer_engine.data import load_deals
 from acquirer_engine.evidence import analyze, build_evidence
@@ -97,8 +97,3 @@ async def test_gives_up_after_max_repairs(pack, notes, good):
 async def test_unavailable_model_falls_back(pack):
     result = await run(pack, FakeClient(LLMUnavailable("out of time")))
     assert result.fallback and result.notes is None and result.page.needs_review
-
-
-async def test_markdown_view(pack, notes, good):
-    text = page_markdown(await run(pack, FakeClient(notes, good)))
-    assert text.startswith("## KKR") and "**Conviction: Medium.**" in text

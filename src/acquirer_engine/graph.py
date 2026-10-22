@@ -160,21 +160,7 @@ def build_graph(run: Run):
         return {"captain": result, "selection": result.names}
 
     def pack(buyer: str, state) -> EvidencePack:
-        """The buyer's evidence, plus why it was shortlisted (theses, notes)."""
-        evidence = build_evidence(buyer, state["analysis"])
-        pool = pools(state)[evidence.profile.buyer_type]
-        candidate = next((c for c in pool.pool.candidates if c.acquirer == buyer), None) if pool.pool else None
-        selection = state["captain"].selection
-        pick = next((p for p in selection.picks if p.acquirer == buyer), None) if selection else None
-        note = candidate.note if candidate else ("Added from the ranking to fill the pool."
-                                                 if buyer in pool.topped_up else None)
-        if getattr(candidate, "caveat", None):
-            note = f"{note} Caveat: {candidate.caveat}"
-        return evidence.model_copy(update={
-            "theses": [f"{t}: {cfg.coverage.theses[t].name}" for t in (candidate.theses if candidate else [])],
-            "coverage_note": note,
-            "captain_reason": pick.why_selected if pick else None,
-        })
+        return annotated_pack(buyer, state, cfg)
 
     # --- analysts: all at once; one failing never stops the others --------------
     async def analysts(state, deadline):
@@ -266,6 +252,26 @@ def build_graph(run: Run):
     graph.add_edge("set_check", "order")
     graph.add_edge("order", END)
     return graph.compile()
+
+
+def annotated_pack(buyer: str, state: RunState, cfg: Config) -> EvidencePack:
+    """The buyer's evidence, plus why it was shortlisted: the theses it fits, the
+    coverage banker's note (and caveat) and the captain's reason. Used by the
+    analysts and by the report."""
+    evidence = build_evidence(buyer, state["analysis"])
+    pool = state["pool_pe"] if evidence.profile.buyer_type == "PE" else state["pool_strategic"]
+    candidate = next((c for c in pool.pool.candidates if c.acquirer == buyer), None) if pool.pool else None
+    selection = state["captain"].selection
+    pick = next((p for p in selection.picks if p.acquirer == buyer), None) if selection else None
+    note = candidate.note if candidate else ("Added from the ranking to fill the pool."
+                                             if buyer in pool.topped_up else None)
+    if getattr(candidate, "caveat", None):
+        note = f"{note} Caveat: {candidate.caveat}"
+    return evidence.model_copy(update={
+        "theses": [f"{t}: {cfg.coverage.theses[t].name}" for t in (candidate.theses if candidate else [])],
+        "coverage_note": note,
+        "captain_reason": pick.why_selected if pick else None,
+    })
 
 
 def _after_intake(state: RunState) -> str:

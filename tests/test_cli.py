@@ -43,4 +43,5 @@ def test_replay_with_empty_cache_still_finishes(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     assert result.output.count("needs review") == 10
     (run_dir,) = (tmp_path / "runs").iterdir()
-    assert {p.name for p in run_dir.iterdir()} == {"report.md", "run_report.json", "state.json", "run.log"}
+    assert {p.name for p in run_dir.iterdir()} == {
+        "report.html", "report.md", "run_report.json", "state.json", "run.log"}

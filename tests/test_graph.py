@@ -4,23 +4,18 @@ A fake client answers by agent and profile; no key, no network."""
 import time
 
 import pytest
-from fakes import intake_answer, pool_from_seeds, selection_from
+from fakes import SAME, GraphClient, run_graph, selection_from, short_page_config
 
-from acquirer_engine.agents.analyst import fallback_page
-from acquirer_engine.config import load_config
-from acquirer_engine.data import load_deals
-from acquirer_engine.evidence import analyze, build_evidence
-from acquirer_engine.graph import Run, build_graph
 from acquirer_engine.cache import Mode
-from acquirer_engine.llm import CallRecord, ChatTurn, LLMUnavailable
-from acquirer_engine.run import report_markdown, run_report
-from acquirer_engine.schemas import AnalystNotes, IntakeResult, OnePagerDraft
+from acquirer_engine.data import load_deals
+from acquirer_engine.evidence import analyze
+from acquirer_engine.graph import Run
+from acquirer_engine.llm import CallRecord, LLMUnavailable
+from acquirer_engine.render import render
+from acquirer_engine.run import run_report
+from acquirer_engine.schemas import IntakeResult
 
-BASE = load_config()
-# Fake pages are short: relax only the length rule.
-CFG = BASE.model_copy(update={"validation": BASE.validation.model_copy(update={"page_words_min": 1})})
-TEXT = CFG.default_banker_text
-SAME = "Roll-up of physician groups with cross-sell into behavioral health clinics."
+CFG = short_page_config()
 
 
 @pytest.fixture(scope="module")
@@ -33,61 +28,8 @@ def analysis(deals):
     return analyze(deals, CFG.default_target, CFG.scoring)
 
 
-class FakeClient:
-    """Answers every agent with a correct reply built from the real data:
-    intake -> `intake`; coverage -> no tool calls, then a pool from the seeds;
-    captain -> the first 6 PE and 4 strategic candidates; analysts -> notes and a
-    page built from the pack.
-    `fail`: exception raised for every call; `fail_agent`: one agent whose calls
-    fail with LLMUnavailable; `bug_for`: buyer whose analyst call raises a
-    ValueError (an unexpected error); `same_thesis`: buyers given identical theses."""
-
-    def __init__(self, analysis, intake=None, fail=None, fail_agent=None, bug_for=None,
-                 same_thesis=()):
-        self.analysis, self.intake, self.fail = analysis, intake or intake_answer(CFG), fail
-        self.fail_agent, self.bug_for, self.same_thesis = fail_agent, bug_for, same_thesis
-        self.calls, self.usage, self.seen = [], [], {}   # seen: first message per call
-        self.pools = {t: pool_from_seeds(analysis, CFG, t, n=n) for t, n in (("PE", 7), ("Strategic", 5))}
-
-    async def chat(self, *, agent, **_):
-        self.calls.append((agent, "chat"))
-        self._maybe_fail(agent)
-        return ChatTurn(text="Seeds are enough.", tool_calls=[])
-
-    def _maybe_fail(self, agent):
-        if self.fail:
-            raise self.fail
-        if agent == self.fail_agent:
-            raise LLMUnavailable(f"{agent} unavailable")
-
-    async def structured(self, *, agent, profile, messages, **_):
-        self.calls.append((agent, profile))
-        self.seen[(agent, profile)] = messages[0]["content"]
-        self._maybe_fail(agent)
-        if profile == "intake":
-            return self.intake
-        if profile == "coverage":
-            return self.pools[agent.split(":", 1)[1]]
-        if profile == "captain":
-            return selection_from(self.pools["PE"], self.pools["Strategic"])
-        buyer = agent.split(":", 1)[1]
-        if buyer == self.bug_for:
-            raise ValueError("a bug")
-        pack = build_evidence(buyer, self.analysis)
-        if profile == "analyst_notes":
-            return AnalystNotes(thesis="t", featured_deal_ids=[pack.top_deals[0].transaction_id],
-                                key_numbers=[{"label": "x", "value": 1, "source": "profile.deals"}],
-                                risks_to_feature=[r.name for r in pack.risks[:2]],
-                                conviction_adjustment={"direction": "none"})
-        page = OnePagerDraft(**fallback_page(pack).model_dump(exclude={"needs_review"}))
-        rewrite_asked = "too much like" in messages[0]["content"]
-        thesis = SAME if buyer in self.same_thesis and not rewrite_asked else f"{buyer} specific angle."
-        return page.model_copy(update={"fit_thesis": thesis})
-
-
-async def run_graph(client, deals, cfg=CFG, strict=True, text=TEXT):
-    graph = build_graph(Run(cfg=cfg, deals=deals, client=client, strict=strict))
-    return await graph.ainvoke({"banker_text": text, "events": []})
+def FakeClient(analysis, **kw):
+    return GraphClient(analysis, CFG, **kw)
 
 
 def statuses(state):
@@ -137,7 +79,8 @@ async def test_run_report_shows_public_knowledge_and_tokens_per_agent(analysis, 
     assert report["public_knowledge_in_screening"] == ["Strategic: Medtronic is a medical device maker."]
     assert report["tokens_by_agent"]["coverage:Strategic"]["input"] == 200
     assert report["tokens_by_call_type"]["coverage"]["input"] == 300
-    assert "Public knowledge used in screening" in report_markdown(state, report)
+    html, markdown = render(state, report, CFG)
+    assert "Public knowledge used in screening" in html and "Public knowledge used in screening" in markdown
 
 
 async def test_one_coverage_agent_failing_uses_its_ranking(analysis, deals):

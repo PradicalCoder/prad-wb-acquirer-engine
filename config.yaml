@@ -164,6 +164,9 @@ scoring:
   antitrust_min_deals: 2
   # Ability is High when at most this many Value/Certainty/Speed risks fired.
   max_ability_risks: 1
+  # A featured deal whose stated EV/EBITDA differs from ours (deal size /
+  # EBITDA) by more than this share gets a caveat on the page.
+  ebitda_mismatch: 0.25
   # A past deal at or above this relevance counts as a "strong precedent".
   strong_relevance: 0.4
   # High willingness needs at least two strong precedents, the latest one

@@ -54,6 +54,7 @@ class Scoring(Section):
     financing_size_ratio: float
     antitrust_min_deals: int
     max_ability_risks: int
+    ebitda_mismatch: float
     strong_relevance: float
     recent_year: int
 

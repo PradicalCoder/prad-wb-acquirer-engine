@@ -22,7 +22,8 @@ def run(
     text: str = typer.Option(None, help="The banker's request. Default: the one in config.yaml."),
     mode: Mode = typer.Option(Mode.live, help="live | replay | refresh | off"),
     config_path: Path = typer.Option(Path("config.yaml"), "--config", help="Settings file."),
-    cache: Path = typer.Option(None, help="Answer cache file. Default: paths.llm_cache in config."),
+    cache: Path = typer.Option(None, help="Answer cache file. Default: the recorded run "
+                                          "(paths.replay_cache) for replay, else paths.llm_cache."),
     strict: bool = typer.Option(False, help="Stop on unexpected errors instead of falling back."),
 ) -> None:
     """Find the 10 most likely acquirers and write a one-page rationale for each."""
@@ -37,10 +38,12 @@ def run(
         )
         raise typer.Exit(code=1)
 
+    # Replay repeats the recorded run unless told otherwise; other modes use the local cache.
+    if cache is None:
+        cache = config.paths.replay_cache if mode is Mode.replay else config.paths.llm_cache
+
     typer.echo(f"Mode: {mode.value}\nRequest: {request}\n")
-    state, run_dir, report = asyncio.run(
-        execute(request, config, mode, cache or config.paths.llm_cache, strict)
-    )
+    state, run_dir, report = asyncio.run(execute(request, config, mode, cache, strict))
 
     if report["stopped"]:
         typer.echo(f"Stopped: {report['stopped']}")

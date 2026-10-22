@@ -6,7 +6,7 @@ import pytest
 
 from acquirer_engine.config import load_config
 from acquirer_engine.data import load_deals
-from acquirer_engine.evidence import analyze, build_evidence
+from acquirer_engine.evidence import analyze, build_evidence, pack_json
 from acquirer_engine.scoring.buyers import default_pick
 
 CONFIG = load_config()
@@ -67,6 +67,15 @@ def test_conviction_and_anomalies(kkr, analysis):
 def test_every_default_pick_has_two_risks(analysis):
     for buyer in default_pick(analysis.rankings, CONFIG.scoring):
         assert len(build_evidence(buyer, analysis).risks) >= 2
+
+
+def test_pack_json_rounds_numbers_for_stable_prompts(analysis):
+    pack = build_evidence("Advocate Health", analysis)
+    # The 90% range differs in its last digit between Windows and Linux builds of scipy.
+    nudged = pack.model_copy(update={"profile": pack.profile.model_copy(update={
+        "range_90": (pack.profile.range_90[0] + 1e-17, pack.profile.range_90[1])})})
+    assert pack_json(pack) == pack_json(nudged)
+    assert '"range_90":[0.029116,' in pack_json(pack)
 
 
 def test_estimate_only_when_not_given(deals, analysis):

@@ -23,6 +23,7 @@ RUN pip install --root-user-action=ignore -r requirements.lock
 COPY pyproject.toml README.md config.yaml ./
 COPY src ./src
 COPY data ./data
+COPY replay_cache ./replay_cache
 RUN pip install --root-user-action=ignore --no-deps .
 
 ENTRYPOINT ["acquirer-engine"]

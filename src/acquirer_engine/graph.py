@@ -45,7 +45,7 @@ from acquirer_engine.agents.captain import (
 from acquirer_engine.agents.coverage import CoverageResult, coverage_fallback, run_coverage
 from acquirer_engine.agents.intake import IntakeOutcome, intake_fallback, run_intake
 from acquirer_engine.config import Config
-from acquirer_engine.evidence import Analysis, EvidencePack, analyze, build_evidence
+from acquirer_engine.evidence import Analysis, EvidencePack, analyze, build_evidence, pack_json
 from acquirer_engine.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
 from acquirer_engine.scoring.buyers import order_final
 from acquirer_engine.validate import similar_theses
@@ -169,7 +169,7 @@ def build_graph(run: Run):
         async def one(buyer):
             started = time.monotonic()
             evidence = pack(buyer, state)
-            log.info("analyst.start", buyer=buyer, pack_sha256=_sha(evidence.model_dump_json()))
+            log.info("analyst.start", buyer=buyer, pack_sha256=_sha(pack_json(evidence)))
             result = await run_analyst(evidence, client, cfg, run.deadline(limits.analyst))
             return result, round(time.monotonic() - started, 2)
 

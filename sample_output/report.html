@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Likely Acquirers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #004165; --deep: #00578f; --blue: #007ac9; --green: #005e48;
+    --ink: #0a0a0a; --muted: #686868; --rule: #d4d4d4; --fill: #efefef;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f4f5f6; color: var(--ink); font: 400 9.5pt/1.45 "Source Sans 3", Helvetica, Arial, sans-serif; }
+  .page { background: #fff; max-width: 8.5in; margin: 24px auto; padding: 0.55in 0.6in; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  h1, h2 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; color: var(--navy); margin: 0; }
+  h1 { font-size: 26pt; line-height: 1.1; color: #fff; }
+  h2 { font-size: 19pt; }
+  .label { margin: 14px 0 4px; padding-bottom: 3px; border-bottom: 1px solid var(--rule);
+           font: 700 7.5pt/1 "Source Sans 3", sans-serif; text-transform: uppercase; letter-spacing: .1rem; color: var(--deep); }
+  .eyebrow { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .1rem; color: var(--blue); }
+  p { margin: 0 0 6px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8pt; }
+  a, .id { color: var(--deep); }
+  .id { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8pt; font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
+  th { text-align: left; font-weight: 700; color: var(--navy); border-bottom: 2px solid var(--blue); padding: 3px 5px; }
+  td { padding: 3px 5px; border-bottom: 1px solid var(--fill); vertical-align: top; }
+  td.num, th.num { text-align: right; }
+  tbody tr:nth-child(even) td { background: #fafbfc; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 2px; color: #fff; font-size: 7.5pt;
+           font-weight: 700; text-transform: uppercase; letter-spacing: .08rem; }
+  .badge.High { background: var(--green); } .badge.Medium { background: var(--deep); } .badge.Low { background: var(--muted); }
+  .tag { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); border-radius: 2px; font-size: 7.5pt; color: var(--muted); }
+
+  /* cover */
+  .band { background: var(--navy); color: #fff; margin: -0.55in -0.6in 18px; padding: 0.5in 0.6in 0.35in; }
+  .band .eyebrow { color: #9fd3f5; }
+  .band .sub { color: #d6e6f2; margin-top: 8px; font-size: 10.5pt; }
+  .request { font-family: "Source Serif 4", Georgia, serif; font-style: italic; color: var(--muted); border-left: 3px solid var(--blue); padding-left: 10px; }
+  .headline { font-size: 11pt; font-weight: 600; color: var(--navy); margin: 10px 0 4px; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 18px; margin: 6px 0; }
+  .facts div span { display: block; font-size: 7pt; text-transform: uppercase; letter-spacing: .08rem; color: var(--muted); }
+  .facts div b { font-weight: 600; }
+  .note { background: var(--fill); padding: 6px 9px; border-left: 3px solid var(--deep); font-size: 8.5pt; margin: 6px 0; }
+  .warn { border-left-color: #b26b00; }
+  ul.tight { margin: 2px 0 6px; padding-left: 16px; } ul.tight li { margin-bottom: 2px; }
+
+  /* buyer pages */
+  .buyer-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--navy); padding-bottom: 8px; }
+  .strip { display: flex; gap: 18px; margin: 8px 0 2px; font-size: 8pt; color: var(--muted); }
+  .strip b { color: var(--ink); font-weight: 600; }
+  .review { background: #fff4e0; border-left: 3px solid #b26b00; padding: 5px 9px; margin-top: 8px; font-size: 8.5pt; }
+  .lens { font-weight: 700; color: var(--navy); font-size: 8pt; text-transform: uppercase; letter-spacing: .06rem; margin-top: 4px; }
+  .risk { margin: 2px 0 4px; } .risk .status { font-size: 7pt; font-weight: 700; text-transform: uppercase; }
+  .fired { color: #a03a1c; } .watch { color: var(--muted); }
+  .pk { font-size: 7.5pt; color: var(--muted); border-top: 1px solid var(--rule); margin-top: 10px; padding-top: 4px; }
+  footer { font-size: 7pt; color: var(--muted); margin-top: 12px; }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; max-width: none; padding: 0; page-break-after: always; break-after: page; }
+    .band { margin: 0 0 16px; }
+    @page { size: letter; margin: 0.45in 0.5in; }
+  }
+  @media (max-width: 640px) {
+    .page { margin: 0; padding: 16px; }
+    .band { margin: -16px -16px 14px; padding: 24px 16px; }
+    .facts { grid-template-columns: 1fr 1fr; }
+    .buyer-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<section class="page cover">
+  <div class="band">
+    <div class="eyebrow">Buyer analysis</div>
+    <h1>Likely acquirers</h1>
+    <div class="sub">Healthcare Services · $200.0M enterprise value · private · strong EBITDA margins</div>
+  </div>
+
+  <p class="request">“I need to quickly identify the 10 most likely acquirers for a $200M healthcare services company. Sector: Healthcare Services, Deal Size: ~$200M EV, Profile: Mid-market, private, regional, strong EBITDA margins.”</p>
+
+  <p class="headline">2 High, 5 Medium, 3 Low conviction · 6 PE, 4 strategic · Comps 2.49x EV/Revenue (2.01–3.01x)</p>
+
+  <h3 class="label">Target</h3>
+  <div class="facts">
+    <div><span>Sector</span><b>Healthcare Services</b></div>
+    <div><span>Enterprise value</span><b>$200.0M</b></div>
+    <div><span>Ownership</span><b>Private (privately held)</b></div>
+    <div><span>Region</span><b>not stated</b></div>
+    <div><span>Margins</span><b>strong (vs sector)</b></div>
+    <div><span>Revenue / EBITDA (estimated)</span><b>$84.4M / $15.0M</b>
+      <span class="small">from 16 sector peers</span></div>
+  </div>
+
+  <h3 class="label">The ten most likely acquirers</h3>
+  <table>
+    <thead><tr><th>#</th><th>Acquirer</th><th>Type</th><th>Conviction</th><th>Best precedent</th><th class="num">Relevance</th><th>Key risk</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>New Mountain Capital</b></td><td>PE</td>
+          <td><span class="badge High">High</span></td>
+          <td><span class="id">MA-2018-0470</span> Evergreen Health Management</td>
+          <td class="num">0.57</td><td>Speed: bidders</td></tr>
+      <tr><td>2</td><td><b>Blackstone</b></td><td>PE</td>
+          <td><span class="badge High">High</span></td>
+          <td><span class="id">MA-2021-0195</span> Evergreen Care Solutions</td>
+          <td class="num">0.83</td><td>Certainty: integration</td></tr>
+      <tr><td>3</td><td><b>KKR</b></td><td>PE</td>
+          <td><span class="badge Medium">Medium</span></td>
+          <td><span class="id">MA-2019-0205</span> Tri Physician Partners</td>
+          <td class="num">0.65</td><td>Certainty: execution</td></tr>
+      <tr><td>4</td><td><b>GTCR</b></td><td>PE</td>
+          <td><span class="badge Medium">Medium</span></td>
+          <td><span class="id">MA-2023-0279</span> Zenith Specialty Care</td>
+          <td class="num">0.57</td><td>Speed: time to close</td></tr>
+      <tr><td>5</td><td><b>General Atlantic</b></td><td>PE</td>
+          <td><span class="badge Medium">Medium</span></td>
+          <td><span class="id">MA-2023-0499</span> Crest Medical Practice</td>
+          <td class="num">0.55</td><td>Certainty: financing</td></tr>
+      <tr><td>6</td><td><b>Nordic Capital</b></td><td>PE</td>
+          <td><span class="badge Medium">Medium</span></td>
+          <td><span class="id">MA-2023-0280</span> Alliance Primary Care</td>
+          <td class="num">0.50</td><td>Speed: bidders</td></tr>
+      <tr><td>7</td><td><b>Bon Secours Mercy Health</b></td><td>Strategic</td>
+          <td><span class="badge Medium">Medium</span></td>
+          <td><span class="id">MA-2020-0306</span> Delta Health</td>
+          <td class="num">0.37</td><td>Speed: time to close</td></tr>
+      <tr><td>8</td><td><b>Advocate Health</b></td><td>Strategic</td>
+          <td><span class="badge Low">Low</span></td>
+          <td><span class="id">MA-2020-0496</span> Hudson Medical Group</td>
+          <td class="num">0.57</td><td>Certainty: antitrust</td></tr>
+      <tr><td>9</td><td><b>Ardent Health Services</b></td><td>Strategic</td>
+          <td><span class="badge Low">Low</span></td>
+          <td><span class="id">MA-2022-0245</span> Select Medical Management</td>
+          <td class="num">0.52</td><td>Certainty: antitrust</td></tr>
+      <tr><td>10</td><td><b>UPMC</b></td><td>Strategic</td>
+          <td><span class="badge Low">Low</span></td>
+          <td><span class="id">MA-2019-0090</span> Principal Behavioral Health</td>
+          <td class="num">0.39</td><td>Certainty: antitrust</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context: 20 most relevant closed deals</h3>
+  <div class="facts">
+    <div><span>EV / Revenue (median, middle half)</span><b>2.49x</b> (2.01x–3.01x)</div>
+    <div><span>EV / EBITDA calculated vs stated</span><b>16.59x</b> vs 12.00x</div>
+    <div><span>EV / Revenue by buyer type</span><b>PE 2.49x</b> · <b>Strategic 2.38x</b></div>
+  </div>
+  <p class="small muted">EV/Revenue is the primary anchor: in this dataset revenue-based figures are internally consistent, while stated EBITDA multiples often differ from deal size ÷ EBITDA.</p>
+
+  <h3 class="label">What the agents changed from the plain ranking</h3>
+  <ul class="tight"><li><b>General Atlantic</b> added: Control LBOs in our sector family and size range (MA-2023-0499 $121M, MA-2020-0095 $206M) give a growth-oriented control-buyer angle.</li><li><b>Bon Secours Mercy Health</b> added: $212M Healthcare Services deal MA-2020-0306 in the target&#39;s size range with 19% synergies and a vertical integration tag; the single deal is a caveat but it is the best remaining strategic fit.</li><li><b>UPMC</b> added: Repeat Healthcare Services acquirer with high-synergy deals (MA-2019-0090 at 9.8%, MA-2020-0312 at 8.4%), giving a synergy-driven angle.</li><li><b>TPG Capital</b> dropped: removed by coverage: Its most relevant deal MA-2022-0350 is a minority investment, its typical size is $87.5M (below $100M), and its other top deals include Health Insurance (MA-2021-0344, MA-2020-0320), which is outside the sector family.</li><li><b>Medtronic</b> dropped: removed by coverage: Medical device maker whose relevant deals are device buyouts, with no control deal in Healthcare Services.</li><li><b>Aspen Dental (ADMI)</b> dropped: not picked by the captain</li></ul>
+<p class="small"><b>Next in line:</b> Aspen Dental (ADMI), Intermountain Health, Welsh Carson</p></section>
+
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 1 of 10 · Financial sponsor</div>
+      <h2>New Mountain Capital</h2>
+    </div>
+    <span class="badge High">High conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>21</b> deals (2015–2024)</span>
+    <span>typical size <b>$121.9M</b></span>
+    <span><b>4</b> strong precedents</span>
+    <span>rank <b>2</b> among PE firms</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>New Mountain Capital is a PE buyer with 21 deals in the dataset (14 closed) between 2015 and 2024, at a typical size of $121.9M, and it ranks 2 among PE buyers. Its activity centers on Physician Groups (5 deals) and Behavioral Health (5), with Dental (3) behind them. Its rationale tags point to High Growth (8), Cost Synergies (6), Market Share (6) and Platform Build (5).</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>New Mountain&#39;s pattern suggests it pursues control and platform investments in Healthcare Services and adjacent provider sectors at roughly our size. Its closest precedent is the Evergreen Health Management LBO, a same-sector Healthcare Services deal at $121.9M (MA-2018-0470, relevance 0.57), and its Coastal Psychiatric platform investment at $314.8M (MA-2022-0165, relevance 0.42) is an adjacent Behavioral Health deal. Given its 4 strong precedents, our $200M target may fit its platform or roll-up playbook. The PE-labeled merger-type deals (MA-2018-0468, MA-2019-0061, MA-2019-0119, MA-2019-0346, MA-2021-0361) may carry noisy labels, so the pattern is a hypothesis.</p>
+<p><span class="tag">P1: Platform builders</span> <span class="tag">P3: Roll-up players</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>The three featured deals are the Evergreen LBO (MA-2018-0470, relevance 0.57, closed), the Platinum Medical Practice strategic acquisition at $250.0M (MA-2019-0246, relevance 0.45, closed) and the Coastal Psychiatric platform (MA-2022-0165, relevance 0.42, closed). All three sit near our size, and the Physician Groups deal is a partial sector match. The latest strong precedent dates to 2024 (MA-2024-0216, relevance 0.49), though it was withdrawn.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2018-0470</td><td>Evergreen Health Management</td><td>2018</td><td>Healthcare Services</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$121.9M</td><td class="num">3.28x</td>
+          <td class="num">21.39x · 12.30x</td><td class="num">0.57</td></tr>
+      <tr><td class="id">MA-2024-0216</td><td>Victory Multispecialty Group</td><td>2024</td><td>Physician Groups</td>
+          <td>Management Buyout <span class="muted">(withdrawn)</span></td>
+          <td class="num">$98.7M</td><td class="num">0.86x</td>
+          <td class="num">9.06x · 15.10x</td><td class="num">0.49</td></tr>
+      <tr><td class="id">MA-2019-0246</td><td>Platinum Medical Practice</td><td>2019</td><td>Physician Groups</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$250.0M</td><td class="num">1.70x</td>
+          <td class="num">12.25x · 9.20x</td><td class="num">0.45</td></tr>
+      <tr><td class="id">MA-2022-0165</td><td>Coastal Psychiatric Services</td><td>2022</td><td>Behavioral Health</td>
+          <td>Platform Investment</td>
+          <td class="num">$314.8M</td><td class="num">2.05x</td>
+          <td class="num">12.59x · 11.20x</td><td class="num">0.42</td></tr>
+      <tr><td class="id">MA-2023-0049</td><td>First Clinical Research</td><td>2023</td><td>Pharma/Biotech</td>
+          <td>Bolt-on Acquisition <span class="muted">(rumored)</span></td>
+          <td class="num">$212.9M</td><td class="num">6.51x</td>
+          <td class="num">20.28x · 21.30x</td><td class="num">0.34</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put the median EV/Revenue at 2.5x, with a middle half of 2.0x to 3.0x. The PE median is also 2.5x, and New Mountain has paid 2.5x on its 14 closed deals. Stated and calculated EV/EBITDA differ by more than 25% on MA-2018-0470 and MA-2024-0216, so EV/Revenue is the more reliable multiple here.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>PE buyers in the comps</td><td class="num">2.49x</td><td class="num">–</td></tr>
+      <tr><td>New Mountain Capital, 14 closed deals</td><td class="num">2.49x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status watch">Watch</span>
+       · <b>Integration.</b> 6 of its 21 deals (29%) were in sectors far from ours, including the Pharma/Biotech bolt-on MA-2023-0049, so some of its history is a weaker guide to how it would integrate a Healthcare Services business.
+<span class="small id">MA-2015-0155, MA-2019-0067, MA-2021-0234, MA-2021-0361, MA-2021-0464, MA-2023-0049</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Bidders.</b> New Mountain&#39;s deals averaged 2.2 bidders, which puts it at the 93rd percentile of 21 buyers for thin competition and makes it less auction-tested; a competitive process may run at a pace it has seen less often.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge High">High</span> Willingness is high because it has 4 strong precedents, the latest from 2024. Ability is high because only 1 risk fired (bidders).</p>
+  <p class="small muted">Rule: willingness High (4 strong precedents, latest 2024) × ability High (1 risks flagged).</p>
+
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 2 of 10 · Financial sponsor</div>
+      <h2>Blackstone</h2>
+    </div>
+    <span class="badge High">High conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>25</b> deals (2015–2024)</span>
+    <span>typical size <b>$341.7M</b></span>
+    <span><b>2</b> strong precedents</span>
+    <span>rank <b>1</b> among PE firms</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>Blackstone is the top-ranked PE buyer in the dataset, with 25 deals (22 closed) between 2015 and 2024 and a typical size of $341.7M. Activity is concentrated in Health Insurance (6 deals) and Revenue Cycle (4), with Health IT (3) and Healthcare Services (2) behind them. Its rationale tags point to High Growth (11 deals), then Platform Build, Margin Improvement and Scale (9 each).</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>Their pattern suggests a platform-plus-add-on approach: the Evergreen Care Solutions bolt-on (MA-2021-0195, $299.0M, a full sector match at relevance 0.83) and the Western Multispecialty platform investment (MA-2018-0122, $251.7M, Physician Groups, an adjacent sector) point to a buyer that could treat our private, strong-margin $200M Healthcare Services business as a scaled add-on. The Platform Build and Scale tags are consistent with that hypothesis. The North Smile MBO (MA-2021-0453, $222.5M, Dental) shows it also transacts near our size, though Dental is a looser sector fit.</p>
+<p><span class="tag">P1: Platform builders</span> <span class="tag">P2: Add-on acquirers</span> <span class="tag">P3: Roll-up players</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>Two precedents clear the strong-deal bar: MA-2021-0195 (relevance 0.83, closed 2021 at 2.5x EV/Revenue) and MA-2018-0122 (relevance 0.45, closed 2018 at 1.2x). The latest strong deal dates to 2021. MA-2021-0453 (relevance 0.33) is a partial match, with Dental an adjacent sector and a margin mismatch.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2021-0195</td><td>Evergreen Care Solutions</td><td>2021</td><td>Healthcare Services</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$299.0M</td><td class="num">2.45x</td>
+          <td class="num">14.73x · 14.60x</td><td class="num">0.83</td></tr>
+      <tr><td class="id">MA-2018-0122</td><td>Western Multispecialty Group</td><td>2018</td><td>Physician Groups</td>
+          <td>Platform Investment</td>
+          <td class="num">$251.7M</td><td class="num">1.19x</td>
+          <td class="num">15.44x · 9.70x</td><td class="num">0.45</td></tr>
+      <tr><td class="id">MA-2021-0453</td><td>North Smile Group</td><td>2021</td><td>Dental</td>
+          <td>Management Buyout</td>
+          <td class="num">$222.5M</td><td class="num">2.76x</td>
+          <td class="num">18.70x · 13.50x</td><td class="num">0.33</td></tr>
+      <tr><td class="id">MA-2021-0436</td><td>Premier Insurance</td><td>2021</td><td>Health Insurance</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$572.7M</td><td class="num">1.18x</td>
+          <td class="num">19.35x · 14.50x</td><td class="num">0.22</td></tr>
+      <tr><td class="id">MA-2015-0475</td><td>Alliance Health Benefits</td><td>2015</td><td>Health Insurance</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$341.9M</td><td class="num">1.14x</td>
+          <td class="num">27.13x · 14.20x</td><td class="num">0.22</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>The comps put median EV/Revenue at 2.5x, with a middle half of 2.0x to 3.0x, and the PE-buyer median is also 2.5x. Blackstone has paid a median of 2.9x on its 22 closed deals, above the comps median, while its closest precedent, MA-2021-0195, priced at 2.5x. Stated and calculated EV/EBITDA diverge materially on several of its deals (including MA-2018-0122 and MA-2021-0453), so EV/Revenue is the more reliable guide.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>PE buyers in the comps</td><td class="num">2.49x</td><td class="num">–</td></tr>
+      <tr><td>Blackstone, 22 closed deals</td><td class="num">2.94x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Integration.</b> 9 of Blackstone&#39;s 25 deals (36%) sit in sectors far from Healthcare Services, so it often buys outside our lane, which could dilute integration focus on a services add-on.
+<span class="small id">MA-2017-0305, MA-2019-0162, MA-2019-0409, MA-2019-0498, MA-2020-0384, MA-2021-0099, MA-2022-0080, MA-2022-0319, MA-2023-0378</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status watch">Watch</span>
+       · <b>Bidders.</b> Its deals average 2.48 bidders, so it is somewhat less auction-tested, which is worth watching for process pace.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge High">High</span> Willingness is High: two strong precedents (MA-2021-0195 and MA-2018-0122), the latest in 2021. Ability is High, with 0 risks fired against the 1-risk limit.</p>
+  <p class="small muted">Rule: willingness High (2 strong precedents, latest 2021) × ability High (0 risks flagged).</p>
+
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 3 of 10 · Financial sponsor</div>
+      <h2>KKR</h2>
+    </div>
+    <span class="badge Medium">Medium conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>17</b> deals (2017–2024)</span>
+    <span>typical size <b>$159.7M</b></span>
+    <span><b>2</b> strong precedents</span>
+    <span>rank <b>3</b> among PE firms</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>KKR is a PE buyer with 17 deals in the dataset (11 closed) between 2017 and 2024, ranking 3 among PE buyers, with a typical size of $159.7M. Its book is weighted to Physician Groups (5 deals), Behavioral Health (3) and Health Insurance (3), and its rationale tags lean toward High Growth (6), Cross-sell (5), Scale (5) and Market Share (4).</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>KKR&#39;s pattern suggests an appetite for physician-led consolidation at roughly our size. The Tri Physician Partners deal (MA-2019-0205, $159.7M, relevance 0.65) and the Frontier Physician Partners bolt-on (MA-2019-0100, $149.7M) point to a platform-plus-add-on approach that a private $200M Healthcare Services target with strong margins could slot into. Healthcare Services is an adjacent sector to the Physician Groups deals rather than a direct match, which is why the sector factor is 0.88. Zenith Integrated Behavioral (MA-2024-0020, $394.2M, relevance 0.29) is the most recent deal featured, but it is larger and further from our business.</p>
+<p><span class="tag">P1: Platform builders</span> <span class="tag">P2: Add-on acquirers</span> <span class="tag">P3: Roll-up players</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>The two closest precedents, MA-2019-0205 (relevance 0.65, closed) and MA-2019-0100 (relevance 0.45, terminated), are both 2019 Physician Groups deals near our size. MA-2024-0020 (relevance 0.29) shows KKR still transacting in 2024, though in Behavioral Health at nearly twice the size. Note that MA-2019-0100 did not complete.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2019-0205</td><td>Tri Physician Partners</td><td>2019</td><td>Physician Groups</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$159.7M</td><td class="num">2.53x</td>
+          <td class="num">15.50x · 9.90x</td><td class="num">0.65</td></tr>
+      <tr><td class="id">MA-2019-0100</td><td>Frontier Physician Partners</td><td>2019</td><td>Physician Groups</td>
+          <td>Bolt-on Acquisition <span class="muted">(terminated)</span></td>
+          <td class="num">$149.7M</td><td class="num">1.98x</td>
+          <td class="num">26.26x · 11.80x</td><td class="num">0.45</td></tr>
+      <tr><td class="id">MA-2024-0020</td><td>Zenith Integrated Behavioral</td><td>2024</td><td>Behavioral Health</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$394.2M</td><td class="num">3.24x</td>
+          <td class="num">33.13x · 9.00x</td><td class="num">0.29</td></tr>
+      <tr><td class="id">MA-2020-0185</td><td>Strategic Practice Management</td><td>2020</td><td>Revenue Cycle</td>
+          <td>Platform Investment</td>
+          <td class="num">$93.5M</td><td class="num">3.27x</td>
+          <td class="num">12.64x · 19.20x</td><td class="num">0.24</td></tr>
+      <tr><td class="id">MA-2019-0014</td><td>Western Integrated Behavioral</td><td>2019</td><td>Behavioral Health</td>
+          <td>Leveraged Buyout <span class="muted">(pending)</span></td>
+          <td class="num">$387.3M</td><td class="num">2.73x</td>
+          <td class="num">26.17x · 9.80x</td><td class="num">0.22</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>The comps median is 2.5x EV/Revenue, with a middle half of 2.0x to 3.0x, and the PE-buyer median is also 2.5x. KKR has paid a median of 2.5x on its closed deals, in line with the comps. EBITDA multiples are a secondary check: calculated and stated figures diverge by more than 25% on several KKR deals (including MA-2019-0205 and MA-2019-0100), so EV/Revenue is the more reliable guide.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>PE buyers in the comps</td><td class="num">2.49x</td><td class="num">–</td></tr>
+      <tr><td>KKR, 11 closed deals</td><td class="num">2.53x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Execution.</b> 4 of KKR&#39;s 17 deals (24%) were withdrawn or terminated, including the Frontier bolt-on (MA-2019-0100), which sits among our closest precedents. This is a high share relative to other buyers and weighs on certainty of close.
+<span class="small id">MA-2017-0497, MA-2019-0100, MA-2019-0489, MA-2020-0173</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status watch">Watch</span>
+       · <b>Time to close.</b> KKR&#39;s closed deals take a median of 242 days from announcement to close, which is slow relative to other buyers and worth watching if timing matters to our client.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Medium">Medium</span> Willingness is Low because the strong precedents (MA-2019-0100 and MA-2019-0205) are both from 2019, not recent. Ability is High because only 1 risk (execution) fired.</p>
+  <p class="small muted">Rule: willingness Low (2 strong precedents, latest 2019) × ability High (1 risks flagged).</p>
+
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 4 of 10 · Financial sponsor</div>
+      <h2>GTCR</h2>
+    </div>
+    <span class="badge Medium">Medium conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>14</b> deals (2015–2023)</span>
+    <span>typical size <b>$172.8M</b></span>
+    <span><b>2</b> strong precedents</span>
+    <span>rank <b>5</b> among PE firms</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>GTCR is a PE buyer with 14 deals between 2015 and 2023, 11 of them closed, at a typical size of $172.8M. Its book is spread across Physician Groups (3), Medical Devices (3) and Dental (3), with Pharma/Biotech (2) behind them. Its rationale tags point to margin improvement (6), platform build (5), high growth (5) and scale (5), and it ranks 5th among PE buyers in the pack.</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>GTCR&#39;s pattern suggests an add-on, platform-build buyer in physician-led services. Its closest precedents are the Physician Groups bolt-on Zenith Specialty Care (MA-2023-0279) and the larger strategic deal National Specialty Care (MA-2015-0145), both with a sector factor of 0.88, a partial match to Healthcare Services. A $200M Healthcare Services asset with strong margins sits near those deals on size and margin, and the margin-improvement tag fits a strong-margin target. Interest is a hypothesis drawn from these deals, not a stated intent.</p>
+<p><span class="tag">P2: Add-on acquirers</span> <span class="tag">P3: Roll-up players</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>The best precedent, MA-2023-0279 ($75.9M, relevance 0.57), was withdrawn rather than closed, which tempers its weight. MA-2015-0145 ($160.1M, relevance 0.52) closed at 2.6x EV/Revenue. The adjacent Medical Devices bolt-on MA-2021-0258 ($438.5M, relevance 0.25) is a weaker match on sector and margin.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2023-0279</td><td>Zenith Specialty Care</td><td>2023</td><td>Physician Groups</td>
+          <td>Bolt-on Acquisition <span class="muted">(withdrawn)</span></td>
+          <td class="num">$75.9M</td><td class="num">2.07x</td>
+          <td class="num">13.80x · 8.90x</td><td class="num">0.57</td></tr>
+      <tr><td class="id">MA-2015-0145</td><td>National Specialty Care</td><td>2015</td><td>Physician Groups</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$160.1M</td><td class="num">2.61x</td>
+          <td class="num">17.79x · 13.90x</td><td class="num">0.52</td></tr>
+      <tr><td class="id">MA-2021-0258</td><td>Silver Instruments</td><td>2021</td><td>Medical Devices</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$438.5M</td><td class="num">4.53x</td>
+          <td class="num">18.66x · 17.20x</td><td class="num">0.25</td></tr>
+      <tr><td class="id">MA-2023-0293</td><td>Superior Behavioral Health</td><td>2023</td><td>Behavioral Health</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$70.2M</td><td class="num">2.72x</td>
+          <td class="num">25.07x · 14.60x</td><td class="num">0.22</td></tr>
+      <tr><td class="id">MA-2018-0357</td><td>Sterling Health Systems</td><td>2018</td><td>Healthcare Services</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$911.4M</td><td class="num">2.30x</td>
+          <td class="num">14.11x · 12.20x</td><td class="num">0.18</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put the median EV/Revenue at 2.5x, with the middle half running from 2.0x to 3.0x; the PE-buyer median is also 2.5x. GTCR&#39;s closed deals averaged 2.6x EV/Revenue, slightly above both. On EBITDA, the calculated comps median is 16.6x against a stated 12.0x, and the two diverge by more than 25% on MA-2023-0279 and MA-2023-0293, so EV/Revenue is the more reliable multiple.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>PE buyers in the comps</td><td class="num">2.49x</td><td class="num">–</td></tr>
+      <tr><td>GTCR, 11 closed deals</td><td class="num">2.61x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Execution.</b> 3 of GTCR&#39;s 14 deals, or 21%, were withdrawn or terminated (MA-2020-0181, MA-2020-0288, MA-2023-0279), including its closest precedent. That puts it at the 87th percentile for deal failure.
+<span class="small id">MA-2020-0181, MA-2020-0288, MA-2023-0279</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Time to close.</b> GTCR&#39;s closed deals took a median of 286 days from announcement to close, the longest in the comparison set (100th percentile). A timeline-sensitive process would run slower with this buyer.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Medium">Medium</span> Willingness is High: 2 strong precedents (MA-2015-0145, MA-2023-0279), the latest in 2023. Ability is Low because 2 risks fired, execution and time to close, which moves the overall call to Medium.</p>
+  <p class="small muted">Rule: willingness High (2 strong precedents, latest 2023) × ability Low (2 risks flagged).</p>
+
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 5 of 10 · Financial sponsor</div>
+      <h2>General Atlantic</h2>
+    </div>
+    <span class="badge Medium">Medium conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>14</b> deals (2019–2024)</span>
+    <span>typical size <b>$158.2M</b></span>
+    <span><b>2</b> strong precedents</span>
+    <span>rank <b>8</b> among PE firms</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>General Atlantic is a PE buyer with 14 deals from 2019 to 2024, 13 of them closed, and a typical size of $158.2M; it ranks 8th among PE buyers in the pack. Its deals concentrate in Physician Groups (4) and Health Insurance (3), with Home Health/Hospice (2) next. Rationale tags point to Market Share (5), High Growth (5) and Scale (5), then Vertical Integration (3).</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>Their pattern suggests an appetite for control LBOs in physician-led and adjacent care platforms. Crest Medical Practice (MA-2023-0499, $121M Physician Groups, 2023) and Clearwater Dental Network (MA-2020-0095, $206M Dental, 2020) bracket our $200M private Healthcare Services target on size. Both were control LBOs, and the Dental sector factor of 0.53 makes that deal a partial match. We read this as a growth-oriented platform or roll-up angle, a hypothesis drawn from those two deals rather than a stated intent.</p>
+<p><span class="tag">P1: Platform builders</span> <span class="tag">P3: Roll-up players</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>The closest precedent is MA-2023-0499 at relevance 0.55, followed by MA-2020-0095 at 0.40. Both cleared the strong-precedent threshold, and the latest of them dates to 2023. MA-2021-0392 (Reliable Medical Associates, $70.6M Physician Groups, 2021, relevance 0.34) is a smaller strategic acquisition and a weaker match on size.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2023-0499</td><td>Crest Medical Practice</td><td>2023</td><td>Physician Groups</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$121.0M</td><td class="num">2.31x</td>
+          <td class="num">27.50x · 11.50x</td><td class="num">0.55</td></tr>
+      <tr><td class="id">MA-2020-0095</td><td>Clearwater Dental Network</td><td>2020</td><td>Dental</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$206.4M</td><td class="num">2.37x</td>
+          <td class="num">11.66x · 12.70x</td><td class="num">0.40</td></tr>
+      <tr><td class="id">MA-2021-0392</td><td>Reliable Medical Associates</td><td>2021</td><td>Physician Groups</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$70.6M</td><td class="num">1.71x</td>
+          <td class="num">23.53x · 13.80x</td><td class="num">0.34</td></tr>
+      <tr><td class="id">MA-2021-0097</td><td>Midland Device Solutions</td><td>2021</td><td>Medical Devices</td>
+          <td>Management Buyout</td>
+          <td class="num">$685.1M</td><td class="num">5.70x</td>
+          <td class="num">20.89x · 21.20x</td><td class="num">0.24</td></tr>
+      <tr><td class="id">MA-2019-0477</td><td>Beacon Medical Associates</td><td>2019</td><td>Physician Groups</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$681.2M</td><td class="num">2.33x</td>
+          <td class="num">26.20x · 17.00x</td><td class="num">0.23</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put EV/Revenue at a median of 2.5x, with a middle half of 2.0x to 3.0x; the PE median is also 2.5x. General Atlantic has paid 2.3x EV/Revenue on its closed deals, slightly under both. EV/EBITDA is secondary: stated and calculated figures diverge by more than 25% on MA-2019-0477, MA-2021-0392 and MA-2023-0499, so EV/Revenue is the more reliable multiple.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>PE buyers in the comps</td><td class="num">2.49x</td><td class="num">–</td></tr>
+      <tr><td>General Atlantic, 13 closed deals</td><td class="num">2.31x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Value</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Price.</b> General Atlantic has paid a median 2.3x EV/Revenue on closed deals against the comps median of 2.5x, which points to pricing pressure toward the lower end of the range.
+</p>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Financing.</b> 4 of General Atlantic&#39;s 14 deals were financed with leverage (MA-2021-0066, MA-2021-0068, MA-2021-0133, MA-2023-0499), and its $158.2M median deal size sits below our $200M EV, so the financing structure needs testing.
+<span class="small id">MA-2021-0066, MA-2021-0068, MA-2021-0133, MA-2023-0499</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Time to close.</b> Its closed deals took a median of 268 days from announcement to close, which is slow for a process where speed matters.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Medium">Medium</span> Willingness is High given 2 strong precedents (MA-2023-0499 and MA-2020-0095) and a latest strong deal in 2023. Ability is Low because 3 risks fired (financing, time_to_close, price), so the overall call is Medium.</p>
+  <p class="small muted">Rule: willingness High (2 strong precedents, latest 2023) × ability Low (3 risks flagged).</p>
+
+  <div class="pk">Public knowledge, not from the deal data: General Atlantic is a global growth equity investor.</div>
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 6 of 10 · Financial sponsor</div>
+      <h2>Nordic Capital</h2>
+    </div>
+    <span class="badge Medium">Medium conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>24</b> deals (2016–2024)</span>
+    <span>typical size <b>$77.5M</b></span>
+    <span><b>2</b> strong precedents</span>
+    <span>rank <b>4</b> among PE firms</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>Nordic Capital is a PE buyer with 24 deals between 2016 and 2024 (21 closed), ranked 4 among PE buyers in the pack. Typical deal size is $77.5M, and the book is weighted to Physician Groups (10 deals), then Healthcare Services (4), Home Health/Hospice (3) and Behavioral Health (3). Rationale tags point to Cost Synergies (7) and Platform Build (7), followed by Diversification (6) and Cross-sell (5).</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>Their pattern suggests an active roll-up appetite in healthcare services. The $389M Physician Groups LBO (MA-2023-0280) and the Dental bolt-ons (MA-2022-0103, MA-2020-0386) at $222M-$249M sit close to our $200M target&#39;s size and its private ownership profile. Dental is an adjacent sector rather than a match, and the Physician Groups LBO is a partial match on margin. Platform Build is among their most frequent tags, which fits a hypothesis that they would view the target as a platform or add-on.</p>
+<p><span class="tag">P1: Platform builders</span> <span class="tag">P2: Add-on acquirers</span> <span class="tag">P3: Roll-up players</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>Their strongest precedents are MA-2023-0280 (relevance 0.50) and MA-2022-0103 (relevance 0.48), followed by MA-2020-0386 (relevance 0.39). Two deals qualify as strong, the latest in 2023. The pack flags that stated and calculated EV/EBITDA diverge by more than 25% on MA-2022-0103, so EV/Revenue is the more reliable read. The PE label on 4 merger-type deals (MA-2021-0208, MA-2021-0403, MA-2023-0255, MA-2023-0355) may be noisy.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2023-0280</td><td>Alliance Primary Care</td><td>2023</td><td>Physician Groups</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$388.8M</td><td class="num">1.24x</td>
+          <td class="num">15.68x · 13.40x</td><td class="num">0.50</td></tr>
+      <tr><td class="id">MA-2022-0103</td><td>Highland Dental Solutions</td><td>2022</td><td>Dental</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$222.1M</td><td class="num">3.41x</td>
+          <td class="num">16.21x · 11.60x</td><td class="num">0.48</td></tr>
+      <tr><td class="id">MA-2020-0386</td><td>Horizon Dental Management</td><td>2020</td><td>Dental</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$248.6M</td><td class="num">3.04x</td>
+          <td class="num">15.94x · 16.40x</td><td class="num">0.39</td></tr>
+      <tr><td class="id">MA-2021-0060</td><td>Midland Imaging Systems</td><td>2021</td><td>Medical Devices</td>
+          <td>Platform Investment</td>
+          <td class="num">$305.3M</td><td class="num">4.19x</td>
+          <td class="num">17.25x · 18.70x</td><td class="num">0.31</td></tr>
+      <tr><td class="id">MA-2023-0466</td><td>Harbor Medical Center</td><td>2023</td><td>Healthcare Services</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$991.0M</td><td class="num">3.40x</td>
+          <td class="num">20.22x · 11.10x</td><td class="num">0.30</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put the median EV/Revenue at 2.5x, with the middle half between 2.0x and 3.0x; the PE-type median is also 2.5x. Nordic Capital has paid a median 2.3x EV/Revenue on its 21 closed deals, slightly below the comps median. On EBITDA, the calculated comps median is 16.6x versus 12.0x stated, a gap that is itself flagged in the pack.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>PE buyers in the comps</td><td class="num">2.49x</td><td class="num">–</td></tr>
+      <tr><td>Nordic Capital, 21 closed deals</td><td class="num">2.33x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Value</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Price.</b> They have paid a median 2.3x EV/Revenue on closed deals, below the 2.5x comps median, so pricing tension is possible against the comps.
+</p>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Financing.</b> Leverage was used on 3 of their 24 deals, and their $77.5M typical deal size is well below our $200M target, so funding a deal of this size is a certainty question.
+<span class="small id">MA-2018-0144, MA-2021-0208, MA-2024-0339</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Bidders.</b> Their deals average 2.0 bidders, which makes them less auction-tested than other PE buyers and may slow a competitive process.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Medium">Medium</span> Willingness is High given 2 strong precedents (MA-2022-0103, MA-2023-0280), the latest in 2023. Ability is Low because 3 risks fired (financing, bidders, price), which nets to Medium.</p>
+  <p class="small muted">Rule: willingness High (2 strong precedents, latest 2023) × ability Low (3 risks flagged).</p>
+
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 7 of 10 · Strategic</div>
+      <h2>Bon Secours Mercy Health</h2>
+    </div>
+    <span class="badge Medium">Medium conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>1</b> deals (2020–2020)</span>
+    <span>typical size <b>$212.3M</b></span>
+    <span><b>0</b> strong precedents</span>
+    <span>rank <b>7</b> among strategics</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>Bon Secours Mercy Health is a Strategic buyer with one deal in the pack: Delta Health (MA-2020-0306), a $212.3M Healthcare Services acquisition that closed in 2020. Its only rationale tag is Vertical Integration. It ranks 7th among Strategic buyers, but with a single deal the profile is thin.</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>Their pattern suggests an interest in services assets that extend a health system&#39;s footprint, and the target is a private Healthcare Services company with a $200.0M enterprise value, the same sector and about the same size as Delta Health (MA-2020-0306, $212.3M). Delta Health scored 1.0 on sector and 0.998 on size, but only 0.7 on ownership and 0.7 on margin, so it is a partial match on those factors. This is a hypothesis drawn from one deal, not an established pattern.</p>
+<p><span class="tag">S1: Health systems expanding services</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>The sole precedent, MA-2020-0306, has a relevance of 0.37, the best this buyer offers, and no deal reaches the strong threshold (0 strong precedents). It closed with a Vertical Integration tag, which supports the footprint-extension reading but cannot show repeat behavior.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2020-0306</td><td>Delta Health</td><td>2020</td><td>Healthcare Services</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$212.3M</td><td class="num">2.58x</td>
+          <td class="num">19.66x · 9.60x</td><td class="num">0.37</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put the median EV/Revenue at 2.5x, with a middle half of 2.0x to 3.0x; the Strategic median is 2.4x. Bon Secours Mercy Health paid 2.6x on Delta Health (MA-2020-0306), slightly above the comps median. Stated EV/EBITDA on that deal is 9.6x against 19.7x calculated; EV/Revenue is the more reliable multiple.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>Strategic buyers in the comps</td><td class="num">2.38x</td><td class="num">–</td></tr>
+      <tr><td>Bon Secours Mercy Health, 1 closed deals</td><td class="num">2.58x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Value</div>
+    <p class="risk"><span class="status watch">Watch</span>
+       · <b>Price.</b> Their 2.6x EV/Revenue on Delta Health sits above the 2.5x comps median at the 66th percentile, so they may price in line with or slightly above the market.
+</p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Time to close.</b> Delta Health took a median of 392 days from announcement to close, at the 98th percentile of buyers, so this buyer&#39;s timeline would be slow.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Medium">Medium</span> Willingness is Low because there are no strong precedents and the latest deal dates from 2020. Ability is High because only 1 risk fired (time to close).</p>
+  <p class="small muted">Rule: willingness Low (0 strong precedents) × ability High (1 risks flagged).</p>
+
+  <div class="pk">Public knowledge, not from the deal data: Bon Secours Mercy Health is a large U.S. nonprofit health system.</div>
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 8 of 10 · Strategic</div>
+      <h2>Advocate Health</h2>
+    </div>
+    <span class="badge Low">Low conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>2</b> deals (2020–2022)</span>
+    <span>typical size <b>$235.8M</b></span>
+    <span><b>1</b> strong precedents</span>
+    <span>rank <b>2</b> among strategics</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>Advocate Health is a Strategic buyer with 2 closed deals in the record, both in Healthcare Services, spanning 2020 to 2022 at a typical size of $235.8M. Its rationale tags point to Diversification on both deals and High Growth on one. It ranks 2nd among Strategic buyers in the pack, on a thin record.</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>Their pattern suggests a health system expanding its service lines, and the closed $436.2M acquisition of Hudson Medical Group (MA-2020-0496, relevance 0.57) is the closest match to our private $200.0M Healthcare Services target. Sector, deal type, ownership and geography all match on that deal, with size the main gap (0.75) and 2020 timing a partial discount (0.75). The second deal, Silver Health Partners (MA-2022-0311), is a $35.3M leveraged buyout that matches on sector but sits far from our size. That is an unusual deal type for an operating company, so we read it as weak evidence of fit. With only 2 deals, this remains a hypothesis.</p>
+<p><span class="tag">S1: Health systems expanding services</span> <span class="tag">S3: Consolidators cross-selling</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>Hudson Medical Group (MA-2020-0496, relevance 0.57) is the only strong precedent and is the one most relevant to us. Silver Health Partners (MA-2022-0311, relevance 0.16) is a much smaller, lower-relevance LBO. The strong precedent dates from 2020, while the latest deal is from 2022.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2020-0496</td><td>Hudson Medical Group</td><td>2020</td><td>Healthcare Services</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$436.2M</td><td class="num">2.04x</td>
+          <td class="num">10.31x · 9.30x</td><td class="num">0.57</td></tr>
+      <tr><td class="id">MA-2022-0311</td><td>Silver Health Partners</td><td>2022</td><td>Healthcare Services</td>
+          <td>Leveraged Buyout</td>
+          <td class="num">$35.3M</td><td class="num">1.69x</td>
+          <td class="num">12.61x · 13.80x</td><td class="num">0.16</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put the median EV/Revenue at 2.5x, with the middle half running 2.0x to 3.0x, and the Strategic median is 2.4x. Advocate Health has paid a median of 1.9x on its closed deals, including 2.0x for Hudson Medical Group (MA-2020-0496). On EBITDA, its calculated paid multiple is 11.5x against 11.6x stated, secondary to the revenue read.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>Strategic buyers in the comps</td><td class="num">2.38x</td><td class="num">–</td></tr>
+      <tr><td>Advocate Health, 2 closed deals</td><td class="num">1.86x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Value</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Price.</b> The 1.9x median EV/Revenue this buyer has paid on closed deals sits below the 2.5x comps median, so it may anchor below the pricing our target would command.
+</p>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Antitrust.</b> Advocate Health has already completed 2 deals in the target&#39;s sector (MA-2020-0496, MA-2022-0311), which raises the prospect of closer regulatory scrutiny on a third.
+<span class="small id">MA-2020-0496, MA-2022-0311</span></p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Low">Low</span> Willingness is limited to 1 strong precedent, the latest dating from 2020, and ability is constrained because 2 risks fired (price and antitrust) against a maximum of 1.</p>
+  <p class="small muted">Rule: willingness Low (1 strong precedents, latest 2020) × ability Low (2 risks flagged).</p>
+
+  <div class="pk">Public knowledge, not from the deal data: Advocate Health is a large nonprofit health system.</div>
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 9 of 10 · Strategic</div>
+      <h2>Ardent Health Services</h2>
+    </div>
+    <span class="badge Low">Low conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>2</b> deals (2022–2022)</span>
+    <span>typical size <b>$94.1M</b></span>
+    <span><b>1</b> strong precedents</span>
+    <span>rank <b>1</b> among strategics</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>Ardent Health Services is a Strategic buyer with 2 deals in the dataset, both in Healthcare Services and both from 2022, with a typical size of $94.1M. Only 1 of the 2 has closed. Both deals carry Diversification tags, and 1 also carries Platform Build. Ardent ranks first among Strategic buyers, though that rests on a very thin record.</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>Ardent&#39;s pattern suggests it uses Diversification-tagged acquisitions to expand services, which would fit a private Healthcare Services target with a strong margin band. Its closest precedent is the Select Medical Management bolt-on (MA-2022-0245), a $68.0M Healthcare Services deal that matches on sector, deal type, ownership, margin and geography. Size is only a partial match (factor 0.58), since our target&#39;s $200M EV sits well above Ardent&#39;s $94.1M typical deal. The record is two deals from a single year, so this is a hypothesis rather than an established acquisition program.</p>
+<p><span class="tag">S1: Health systems expanding services</span> <span class="tag">S3: Consolidators cross-selling</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>MA-2022-0245 is the stronger precedent at relevance 0.52 and closed at 1.9x EV/Revenue. MA-2022-0389 (Quality Care, $120.2M) is a SPAC Merger that is still pending, and its deal-type factor of 0.3 holds relevance to 0.20. Both deals are in the target&#39;s sector, and both carry the Diversification tag.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2022-0245</td><td>Select Medical Management</td><td>2022</td><td>Healthcare Services</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$68.0M</td><td class="num">1.90x</td>
+          <td class="num">10.00x · 14.70x</td><td class="num">0.52</td></tr>
+      <tr><td class="id">MA-2022-0389</td><td>Quality Care</td><td>2022</td><td>Healthcare Services</td>
+          <td>SPAC Merger <span class="muted">(pending)</span></td>
+          <td class="num">$120.2M</td><td class="num">2.11x</td>
+          <td class="num">14.14x · 17.90x</td><td class="num">0.20</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>The comps median is 2.5x EV/Revenue, with a middle half of 2.0x to 3.0x; the Strategic median is 2.4x. Ardent&#39;s one closed deal (MA-2022-0245) priced at 1.9x, below both medians and just under the bottom of the middle half. Stated and calculated EV/EBITDA differ by more than 25% on MA-2022-0245 and MA-2022-0389, so EV/Revenue is the more reliable multiple here.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>Strategic buyers in the comps</td><td class="num">2.38x</td><td class="num">–</td></tr>
+      <tr><td>Ardent Health Services, 1 closed deals</td><td class="num">1.90x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Value</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Price.</b> Ardent paid a median 1.9x EV/Revenue on its closed deal against a comps median of 2.5x, so it may anchor below where the market is clearing.
+</p>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Antitrust.</b> Ardent has already done 2 of 2 deals in the target&#39;s sector (MA-2022-0245, MA-2022-0389), which puts it at the 100th percentile for overlap and raises the chance of regulatory scrutiny.
+<span class="small id">MA-2022-0245, MA-2022-0389</span></p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Bidders.</b> Ardent&#39;s deals averaged 1.5 bidders, so it has little experience in competitive auctions and may be slower in a contested process.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Low">Low</span> Willingness is Low: the pack counts 1 strong precedent (MA-2022-0245) and the latest strong deal is from 2022. Ability is Low: 4 risks fired (financing, bidders, price, antitrust) against a maximum of 1.</p>
+  <p class="small muted">Rule: willingness Low (1 strong precedents, latest 2022) × ability Low (4 risks flagged).</p>
+
+</section>
+<section class="page buyer">
+  <div class="buyer-head">
+    <div>
+      <div class="eyebrow">Acquirer 10 of 10 · Strategic</div>
+      <h2>UPMC</h2>
+    </div>
+    <span class="badge Low">Low conviction</span>
+  </div>
+  <div class="strip">
+    <span><b>3</b> deals (2018–2020)</span>
+    <span>typical size <b>$55.0M</b></span>
+    <span><b>0</b> strong precedents</span>
+    <span>rank <b>6</b> among strategics</span>
+  </div>
+
+  <h3 class="label">Acquirer overview</h3>
+  <p>UPMC is a strategic buyer with 3 closed deals between 2018 and 2020, all in Healthcare Services, with a typical size of $55.0M. Its rationale tags are spread across Platform Build, Market Share, Cost Synergies and High Growth, one deal each. It ranks 6th among strategic buyers, and none of its deals qualifies as a strong precedent.</p>
+
+  <h3 class="label">Strategic fit thesis</h3>
+  <p>UPMC&#39;s pattern suggests it may view a $200M private, strong-margin services business as an extension of its core. Its two closest precedents, Principal Behavioral Health (MA-2019-0090, relevance 0.39) and Sterling Care Network (MA-2020-0312, relevance 0.35), are same-sector deals, and MA-2020-0312 carried a Cost Synergies rationale. The best match is partial: MA-2019-0090 scores 0.74 on size and 0.7 on ownership. Its deals are small, with a typical size of $55.0M against our $200M target, and the latest dates to 2020, so fit remains a hypothesis.</p>
+<p><span class="tag">S1: Health systems expanding services</span> </p>
+  <h3 class="label">Precedent activity</h3>
+  <p>UPMC&#39;s most relevant deals are both Healthcare Services: MA-2019-0090, a bolt-on at 0.39 relevance, and MA-2020-0312, a strategic acquisition at 0.35. MA-2018-0486, a recapitalization of Keystone Behavioral Health, scores only 0.07 as a weaker match on deal type and margin. None of the three clears the strong-precedent threshold.</p>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Year</th><th>Sector</th><th>Type</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2019-0090</td><td>Principal Behavioral Health</td><td>2019</td><td>Healthcare Services</td>
+          <td>Bolt-on Acquisition</td>
+          <td class="num">$443.7M</td><td class="num">1.99x</td>
+          <td class="num">10.98x · 11.70x</td><td class="num">0.39</td></tr>
+      <tr><td class="id">MA-2020-0312</td><td>Sterling Care Network</td><td>2020</td><td>Healthcare Services</td>
+          <td>Strategic Acquisition</td>
+          <td class="num">$55.0M</td><td class="num">2.74x</td>
+          <td class="num">14.47x · 11.30x</td><td class="num">0.35</td></tr>
+      <tr><td class="id">MA-2018-0486</td><td>Keystone Behavioral Health</td><td>2018</td><td>Healthcare Services</td>
+          <td>Recapitalization</td>
+          <td class="num">$32.8M</td><td class="num">2.33x</td>
+          <td class="num">23.43x · 17.00x</td><td class="num">0.07</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Valuation context</h3>
+  <p>Comps put the median at 2.5x EV/Revenue, with the middle half running from 2.0x to 3.0x; the Strategic buyer median is 2.4x. UPMC itself paid a median of 2.3x EV/Revenue across its closed deals. On EBITDA, the calculated comps median is 16.6x versus 12.0x stated, so the revenue multiple is the cleaner anchor; the pack flags a stated-versus-calculated gap above 25% on MA-2018-0486.</p>
+  <table>
+    <thead><tr><th>EV / Revenue</th><th class="num">Median</th><th class="num">Middle half</th></tr></thead>
+    <tbody>
+      <tr><td>Comparable closed deals</td><td class="num">2.49x</td><td class="num">2.01x–3.01x</td></tr>
+      <tr><td>Strategic buyers in the comps</td><td class="num">2.38x</td><td class="num">–</td></tr>
+      <tr><td>UPMC, 3 closed deals</td><td class="num">2.33x</td><td class="num">–</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Risk flags</h3>
+    <div class="lens">Certainty</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Antitrust.</b> UPMC has already done 3 of 3 deals in the target&#39;s sector, so another Healthcare Services acquisition may draw regulatory attention.
+<span class="small id">MA-2018-0486, MA-2019-0090, MA-2020-0312</span></p>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Financing.</b> None of UPMC&#39;s 3 deals used leverage, and its median deal size of $55.0M is well below the $200M target EV, so funding a deal this size is a stretch beyond its history.
+</p>
+    <div class="lens">Speed</div>
+    <p class="risk"><span class="status fired">Flagged</span>
+       · <b>Time to close.</b> UPMC&#39;s closed deals took a median of 348 days from announcement to close, a slow timeline relative to other buyers.
+</p>
+
+  <h3 class="label">Conviction</h3>
+  <p><span class="badge Low">Low</span> Willingness is Low because UPMC has no strong precedents and its latest deal dates to 2020, before the 2021 recency cutoff. Ability is Low because 3 risks fired (financing, time to close and antitrust), above the maximum of 1.</p>
+  <p class="small muted">Rule: willingness Low (0 strong precedents) × ability Low (3 risks flagged).</p>
+
+  <div class="pk">Public knowledge, not from the deal data: UPMC is a large nonprofit integrated health system.</div>
+</section>
+
+<section class="page appendix">
+  <div class="eyebrow">Appendix</div>
+  <h2>How the list was built</h2>
+
+  <h3 class="label">Valuation comps</h3>
+  <table>
+    <thead><tr><th>Deal</th><th>Target</th><th>Acquirer</th><th>Type</th><th>Year</th><th class="num">Size</th><th class="num">EV/Rev</th><th class="num">EV/EBITDA calc · stated</th><th class="num">Relevance</th></tr></thead>
+    <tbody>
+      <tr><td class="id">MA-2021-0195</td><td>Evergreen Care Solutions</td><td>Blackstone</td><td>PE</td><td>2021</td>
+          <td class="num">$299.0M</td><td class="num">2.45x</td>
+          <td class="num">14.73x · 14.60x</td><td class="num">0.83</td></tr>
+      <tr><td class="id">MA-2019-0205</td><td>Tri Physician Partners</td><td>KKR</td><td>PE</td><td>2019</td>
+          <td class="num">$159.7M</td><td class="num">2.53x</td>
+          <td class="num">15.50x · 9.90x</td><td class="num">0.65</td></tr>
+      <tr><td class="id">MA-2018-0470</td><td>Evergreen Health Management</td><td>New Mountain Capital</td><td>PE</td><td>2018</td>
+          <td class="num">$121.9M</td><td class="num">3.28x</td>
+          <td class="num">21.39x · 12.30x</td><td class="num">0.57</td></tr>
+      <tr><td class="id">MA-2020-0496</td><td>Hudson Medical Group</td><td>Advocate Health</td><td>Strategic</td><td>2020</td>
+          <td class="num">$436.2M</td><td class="num">2.04x</td>
+          <td class="num">10.31x · 9.30x</td><td class="num">0.57</td></tr>
+      <tr><td class="id">MA-2023-0499</td><td>Crest Medical Practice</td><td>General Atlantic</td><td>PE</td><td>2023</td>
+          <td class="num">$121.0M</td><td class="num">2.31x</td>
+          <td class="num">27.50x · 11.50x</td><td class="num">0.55</td></tr>
+      <tr><td class="id">MA-2022-0350</td><td>Quality Medical Group</td><td>TPG Capital</td><td>PE</td><td>2022</td>
+          <td class="num">$186.6M</td><td class="num">2.99x</td>
+          <td class="num">16.96x · 11.20x</td><td class="num">0.54</td></tr>
+      <tr><td class="id">MA-2023-0263</td><td>Granite Diagnostics</td><td>Vista Equity</td><td>PE</td><td>2023</td>
+          <td class="num">$217.4M</td><td class="num">5.97x</td>
+          <td class="num">20.32x · 24.00x</td><td class="num">0.54</td></tr>
+      <tr><td class="id">MA-2022-0245</td><td>Select Medical Management</td><td>Ardent Health Services</td><td>Strategic</td><td>2022</td>
+          <td class="num">$68.0M</td><td class="num">1.90x</td>
+          <td class="num">10.00x · 14.70x</td><td class="num">0.52</td></tr>
+      <tr><td class="id">MA-2022-0254</td><td>Apex Health Benefits</td><td>Oscar Health</td><td>Strategic</td><td>2022</td>
+          <td class="num">$256.3M</td><td class="num">1.84x</td>
+          <td class="num">17.68x · 13.80x</td><td class="num">0.52</td></tr>
+      <tr><td class="id">MA-2015-0145</td><td>National Specialty Care</td><td>GTCR</td><td>PE</td><td>2015</td>
+          <td class="num">$160.1M</td><td class="num">2.61x</td>
+          <td class="num">17.79x · 13.90x</td><td class="num">0.52</td></tr>
+      <tr><td class="id">MA-2023-0280</td><td>Alliance Primary Care</td><td>Nordic Capital</td><td>PE</td><td>2023</td>
+          <td class="num">$388.8M</td><td class="num">1.24x</td>
+          <td class="num">15.68x · 13.40x</td><td class="num">0.50</td></tr>
+      <tr><td class="id">MA-2022-0103</td><td>Highland Dental Solutions</td><td>Nordic Capital</td><td>PE</td><td>2022</td>
+          <td class="num">$222.1M</td><td class="num">3.41x</td>
+          <td class="num">16.21x · 11.60x</td><td class="num">0.48</td></tr>
+      <tr><td class="id">MA-2020-0408</td><td>Granite Care</td><td>Atrium Health</td><td>Strategic</td><td>2020</td>
+          <td class="num">$336.3M</td><td class="num">2.80x</td>
+          <td class="num">20.63x · 13.60x</td><td class="num">0.46</td></tr>
+      <tr><td class="id">MA-2019-0246</td><td>Platinum Medical Practice</td><td>New Mountain Capital</td><td>PE</td><td>2019</td>
+          <td class="num">$250.0M</td><td class="num">1.70x</td>
+          <td class="num">12.25x · 9.20x</td><td class="num">0.45</td></tr>
+      <tr><td class="id">MA-2018-0122</td><td>Western Multispecialty Group</td><td>Blackstone</td><td>PE</td><td>2018</td>
+          <td class="num">$251.7M</td><td class="num">1.19x</td>
+          <td class="num">15.44x · 9.70x</td><td class="num">0.45</td></tr>
+      <tr><td class="id">MA-2020-0304</td><td>Professional Health Management</td><td>Francisco Partners</td><td>PE</td><td>2020</td>
+          <td class="num">$164.2M</td><td class="num">3.06x</td>
+          <td class="num">17.10x · 16.60x</td><td class="num">0.44</td></tr>
+      <tr><td class="id">MA-2019-0192</td><td>Southeast Physician Partners</td><td>Francisco Partners</td><td>PE</td><td>2019</td>
+          <td class="num">$420.2M</td><td class="num">2.08x</td>
+          <td class="num">15.74x · 11.70x</td><td class="num">0.44</td></tr>
+      <tr><td class="id">MA-2022-0187</td><td>Horizon Medical Solutions</td><td>Steward Health Care</td><td>Strategic</td><td>2022</td>
+          <td class="num">$490.0M</td><td class="num">2.71x</td>
+          <td class="num">23.79x · 11.40x</td><td class="num">0.43</td></tr>
+      <tr><td class="id">MA-2022-0165</td><td>Coastal Psychiatric Services</td><td>New Mountain Capital</td><td>PE</td><td>2022</td>
+          <td class="num">$314.8M</td><td class="num">2.05x</td>
+          <td class="num">12.59x · 11.20x</td><td class="num">0.42</td></tr>
+      <tr><td class="id">MA-2022-0317</td><td>Valley MedTech</td><td>Medtronic</td><td>Strategic</td><td>2022</td>
+          <td class="num">$349.2M</td><td class="num">5.41x</td>
+          <td class="num">18.98x · 17.70x</td><td class="num">0.42</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="label">Financial sponsor coverage</h3>
+    <p class="small"><b>P1</b> kept: Found 12 buyers with several control platform deals near our $200M size, so it is a solid thesis. <span class="muted">Found: New Mountain Capital, General Atlantic, Warburg Pincus, Nordic Capital, Welsh Carson, Blackstone, Francisco Partners, TPG Capital, KKR, Hellman &amp; Friedman.</span></p>
+    <p class="small"><b>P2</b> kept: Found 7 buyers, led by Blackstone, GTCR and Nordic Capital with relevant bolt-ons in the sector family. <span class="muted">Found: Blackstone, GTCR, Nordic Capital, KKR, Hellman &amp; Friedman, Vista Equity, Veritas Capital.</span></p>
+    <p class="small"><b>P3</b> kept: Found 10 buyers with Platform Build, Scale and Market Share deals showing consolidation intent. <span class="muted">Found: Blackstone, KKR, GTCR, General Atlantic, TPG Capital, Nordic Capital, New Mountain Capital, Hellman &amp; Friedman, Vista Equity, Welsh Carson.</span></p>
+    <ul class="tight small"><li><b>Screened out TPG Capital:</b> Its most relevant deal MA-2022-0350 is a minority investment, its typical size is $87.5M (below $100M), and its other top deals include Health Insurance (MA-2021-0344, MA-2020-0320), which is outside the sector family. <span class="id">MA-2022-0350, MA-2021-0344, MA-2020-0320</span></li><li><b>Screened out Vista Equity:</b> Its top deal MA-2023-0263 is Medical Devices, and MA-2023-0221 is a withdrawn recapitalization, so strong control deals in the sector family are thin. <span class="id">MA-2023-0263, MA-2023-0221</span></li></ul>
+<p class="small">Added from the ranking to fill the pool: Welsh Carson.</p>  <h3 class="label">Strategic coverage</h3>
+    <p class="small"><b>S1</b> kept: It surfaced 7 buyers, mostly health systems with Healthcare Services deals close to the target&#39;s size. <span class="muted">Found: Advocate Health, Ardent Health Services, Atrium Health, Steward Health Care, UPMC, Bon Secours Mercy Health, Ascension Health.</span></p>
+    <p class="small"><b>S3</b> kept: It surfaced 16 buyers, and the cross-sell and diversification tags support the Ardent, Intermountain and Aspen fits. <span class="muted">Found: Advocate Health, Ardent Health Services, Dental Care Alliance, Aspen Dental (ADMI), MB2 Dental, Lyra Health, Universal Health Services, Elara Caring, VNS Health, Behavioral Health Group.</span></p>
+    <ul class="tight small"><li><b>Screened out Medtronic:</b> Medical device maker whose relevant deals are device buyouts, with no control deal in Healthcare Services. <span class="id">MA-2022-0317, MA-2023-0117, MA-2021-0446</span></li><li><b>Screened out Oscar Health:</b> Insurer whose single strong deal was a health insurance bolt-on, outside the Healthcare Services family. <span class="id">MA-2022-0254</span></li></ul>
+
+  <h3 class="label">Public knowledge used in screening (not from the deal data)</h3>
+  <ul class="tight small"><li>Strategic: Medtronic is a medical device manufacturer.</li><li>Strategic: Oscar Health is a health insurer.</li></ul>
+
+  <h3 class="label">Run</h3>
+  <p class="small">intake 9.82 s · score 0.06 s · pe coverage 15.69 s · strategic coverage 17.13 s · captain 7.95 s · analysts 15.35 s · set check 0.0 s · order 0.0 s</p>
+  <p class="small muted">Total 50.4 s · 26 model calls (0 replayed) · 140,305 input / 24,020 output tokens.</p>
+</section>
+
+</body>
+</html>

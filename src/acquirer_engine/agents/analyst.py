@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from acquirer_engine.agents import cached_system, load_prompt, repair_turn
 from acquirer_engine.config import Config
-from acquirer_engine.evidence import EvidencePack
+from acquirer_engine.evidence import EvidencePack, pack_json
 from acquirer_engine.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
 from acquirer_engine.schemas import AnalystNotes, OnePage, OnePagerDraft
 from acquirer_engine.validate import validate_page
@@ -33,10 +33,10 @@ async def run_analyst(
     pack: EvidencePack, client: LLMClient, cfg: Config, deadline: float
 ) -> AnalystResult:
     agent = f"analyst:{pack.buyer}"
-    pack_json = pack.model_dump_json(exclude_none=True)
+    evidence = pack_json(pack)
     try:
-        notes = await _plan(agent, pack_json, client, cfg, deadline)
-        return await _write(agent, pack, pack_json, notes, client, cfg, deadline)
+        notes = await _plan(agent, evidence, client, cfg, deadline)
+        return await _write(agent, pack, evidence, notes, client, cfg, deadline)
     except (LLMUnavailable, LLMOutputInvalid) as error:  # expected: model down, or notes unusable
         log.warning("analyst.fallback", agent=agent, reason=str(error))
         return AnalystResult(page=fallback_page(pack), notes=None, repairs=0,
@@ -66,7 +66,7 @@ async def revise(result: AnalystResult, pack: EvidencePack, feedback: str, clien
     """Write the page again from the same notes, with one extra instruction
     (used when its fit thesis reads too much like another buyer's)."""
     agent = f"analyst:{pack.buyer}"
-    return await _write(agent, pack, pack.model_dump_json(exclude_none=True), result.notes,
+    return await _write(agent, pack, pack_json(pack), result.notes,
                         client, cfg, deadline, extra=feedback)
 
 

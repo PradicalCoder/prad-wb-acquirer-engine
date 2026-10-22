@@ -8,6 +8,7 @@ validator check that every number on a page is real.
 Shares are stored as fractions (0.12 = 12%); multiples as plain numbers (2.49 = 2.49x).
 """
 
+import json
 from typing import NamedTuple
 
 import pandas as pd
@@ -132,6 +133,22 @@ class EvidencePack(BaseModel):
     coverage_note: str | None = None
     captain_reason: str | None = None
     anomalies: list[str] = []
+
+
+def pack_json(pack: EvidencePack) -> str:
+    """The pack as the model sees it: compact JSON with every number rounded to 6
+    decimals. Numerical libraries can differ in the last digit from one platform
+    to another (e.g. 0.029115604679285225 vs 0.02911560467928522); rounding makes
+    the prompt, and so its cache key, identical everywhere."""
+    def tidy(value):
+        if isinstance(value, float):
+            return round(value, 6)
+        if isinstance(value, dict):
+            return {k: tidy(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [tidy(v) for v in value]
+        return value
+    return json.dumps(tidy(pack.model_dump(exclude_none=True)), separators=(",", ":"))
 
 
 def build_evidence(buyer: str, analysis: Analysis) -> EvidencePack:

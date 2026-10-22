@@ -27,6 +27,7 @@ class Paths(Section):
     data_csv: Path
     runs_dir: Path
     llm_cache: Path
+    replay_cache: Path
 
 
 class Scoring(Section):
@@ -148,6 +149,7 @@ def load_config(path: str | Path = "config.yaml") -> Config:
     config.paths.data_csv = base / config.paths.data_csv
     config.paths.runs_dir = base / config.paths.runs_dir
     config.paths.llm_cache = base / config.paths.llm_cache
+    config.paths.replay_cache = base / config.paths.replay_cache
     return config
 
 

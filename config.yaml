@@ -18,6 +18,10 @@ paths:
   # returns the stored answer instead of calling the API. Used by the LLM client.
   llm_cache: .cache/llm_cache.sqlite
 
+  # A recorded run of the default request, kept with the code. `--mode replay`
+  # reads it by default, so the full run can be repeated without an API key.
+  replay_cache: replay_cache/llm_cache.sqlite
+
 
 # ---------------------------------------------------------------------------
 # The request used when `acquirer-engine run` is given no --text.

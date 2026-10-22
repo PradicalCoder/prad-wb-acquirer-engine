@@ -87,6 +87,17 @@ def test_conviction_moves_only_with_a_plan(pack):
     assert validate_page(high, pack, notes("up"), SHORT_OK) == []      # planned, one level -> ok
 
 
+def test_conviction_cannot_move_two_levels(pack):
+    # Advocate Health's rule result is Low; a High page skips Medium.
+    analysis = analyze(load_deals(CONFIG.paths.data_csv), CONFIG.default_target, CONFIG.scoring)
+    low = build_evidence("Advocate Health", analysis)
+    assert low.conviction.level == "Low"
+    page = good_page(pack, acquirer="Advocate Health",
+                     conviction={"level": "High", "rationale": "Strong fit."})
+    errors = validate_page(page, low, notes("up"), SHORT_OK)
+    assert any("at most one level" in e for e in errors)
+
+
 def test_length(pack):
     errors = validate_page(good_page(pack), pack, notes(), CONFIG.validation)
     assert len(errors) == 1 and "words of prose" in errors[0]

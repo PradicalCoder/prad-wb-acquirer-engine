@@ -58,14 +58,25 @@ class FieldSource(Model):
 
 
 class IntakeResult(Model):
-    """The banker's request as a target, with the source of every filled field."""
+    """The banker's request as a target, with the source of every filled field,
+    or the reason the request can't be run (e.g. a sector not in the data, or
+    no deal size). Exactly one of target and stop_reason is set."""
 
-    target: TargetProfile
-    sources: dict[str, FieldSource]   # keyed by TargetProfile field name
-    state_mentioned: str | None = None  # e.g. "Texas"; kept for the report, not mapped to a region
+    target: TargetProfile | None = None
+    stop_reason: str | None = None
+    sources: dict[str, FieldSource] = {}  # keyed by TargetProfile field name
+    state_mentioned: str | None = None    # e.g. "Texas"; kept for the report, not mapped to a region
+
+    @model_validator(mode="after")
+    def target_or_stop_reason(self):
+        if (self.target is None) == (self.stop_reason is None):
+            raise ValueError("set exactly one of target and stop_reason")
+        return self
 
     @model_validator(mode="after")
     def every_filled_field_has_a_source(self):
+        if self.target is None:
+            return self
         fields = set(TargetProfile.model_fields)
         unknown = set(self.sources) - fields
         if unknown:

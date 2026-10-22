@@ -29,6 +29,14 @@ def test_intake_accepts_sourced_fields():
     assert IntakeResult(target=TARGET, sources=SOURCES).sources["ownership"].provenance == "derived"
 
 
+def test_intake_sets_exactly_one_of_target_and_stop_reason():
+    assert IntakeResult(stop_reason="Veterinary clinics are not a sector in the data.").target is None
+    with pytest.raises(ValidationError):
+        IntakeResult()                                                 # neither
+    with pytest.raises(ValidationError):
+        IntakeResult(target=TARGET, sources=SOURCES, stop_reason="x")  # both
+
+
 @pytest.mark.parametrize("sources", [
     {k: v for k, v in SOURCES.items() if k != "ownership"},               # filled field, no source
     SOURCES | {"ev_mm": {"provenance": "given"}},                          # given, but no quote

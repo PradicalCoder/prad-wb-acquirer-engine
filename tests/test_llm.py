@@ -212,6 +212,60 @@ def test_retry_after_header_wins():
     assert retry_wait(0, error, CONFIG.llm.retries) == 1.5
 
 
+# --- chat(): one tool-using turn ------------------------------------------------------
+
+TOOLS = [{"name": "get_buyer_rankings", "description": "Top buyers.",
+          "input_schema": {"type": "object", "properties": {"top_k": {"type": "integer"}}}}]
+
+
+def tool_turn():
+    return AIMessage(
+        content=[{"type": "text", "text": "Checking two profiles."}],
+        tool_calls=[{"name": "get_acquirer_profile", "args": {"name": "KKR"}, "id": "t1"},
+                    {"name": "get_acquirer_profile", "args": {"name": "GTCR"}, "id": "t2"}],
+        usage_metadata={"input_tokens": 900, "output_tokens": 60, "total_tokens": 960},
+    )
+
+
+async def chat(client, tools=TOOLS):
+    return await client.chat(agent="coverage:PE", profile="coverage", system="Find buyers.",
+                             messages=[{"role": "user", "content": "Seed results ..."}],
+                             tools=tools, prompt_version="v1", deadline=time.monotonic() + 5)
+
+
+async def test_chat_returns_tool_calls_and_replays_them(tmp_path):
+    turn = await chat(make_client(tmp_path, script=[tool_turn()]))
+    assert turn.text == "Checking two profiles."
+    assert [(c.name, c.args["name"]) for c in turn.tool_calls] == [
+        ("get_acquirer_profile", "KKR"), ("get_acquirer_profile", "GTCR")]
+
+    replay = make_client(tmp_path, mode=Mode.replay)
+    assert await chat(replay) == turn
+    assert replay.usage[0].cache_hit and replay.sent == 0
+
+
+async def test_changed_tools_are_a_new_question(tmp_path):
+    await chat(make_client(tmp_path, script=[tool_turn()]))
+    other_tools = [TOOLS[0] | {"description": "Top buyers, ranked."}]
+    with pytest.raises(LLMUnavailable):
+        await chat(make_client(tmp_path, mode=Mode.replay), tools=other_tools)
+
+
+async def test_chat_retries_like_structured(tmp_path):
+    client = make_client(tmp_path, script=[status_error(anthropic.RateLimitError, 429), tool_turn()])
+    assert len((await chat(client)).tool_calls) == 2
+    assert client.usage[0].attempts == 2
+
+
+def test_chat_request_offers_tools_without_forcing_them(tmp_path):
+    model = make_client(tmp_path)._model("coverage")
+    bound = model.bind_tools(TOOLS)
+    payload = model._get_request_payload([{"role": "user", "content": "hi"}], **bound.kwargs)
+    assert [t["name"] for t in payload["tools"]] == ["get_buyer_rankings"]
+    assert payload.get("tool_choice", {"type": "auto"}) == {"type": "auto"}
+    assert "temperature" not in payload
+
+
 def test_backoff_doubles_and_is_capped():
     error = anthropic.APIConnectionError(request=REQUEST)
     cfg = CONFIG.llm.retries

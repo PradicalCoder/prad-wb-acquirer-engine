@@ -14,6 +14,10 @@ What a call does, in order:
 
 Structured output uses Claude's own structured-output feature
 (output_config.format with a JSON schema), not a forced tool call.
+
+chat() is the same path for a tool-using turn: it returns the tool calls the
+model asked for (the caller runs them); the tool definitions are part of the
+cache key, so a replay reproduces the turn exactly.
 """
 
 import asyncio
@@ -59,6 +63,20 @@ class CallRecord(BaseModel):
     cache_hit: bool          # answer came from our answer cache: no new tokens spent
     attempts: int
     seconds: float
+
+
+class ToolCall(BaseModel):
+    """One tool call the model asked for (internal: never an LLM output schema)."""
+
+    name: str
+    args: dict[str, Any]
+
+
+class ChatTurn(BaseModel):
+    """What chat() returns: the model's text and the tool calls it asked for."""
+
+    text: str
+    tool_calls: list[ToolCall]
 
 
 def is_retryable(error: anthropic.APIError) -> bool:
@@ -110,49 +128,103 @@ class LLMClient:
         deadline: float,            # time.monotonic() value by which we must be done
     ) -> T:
         """Ask for an answer that fits `schema`. See the module docstring for the steps."""
+        request = self._request(profile, system, messages, prompt_version)
+        request["output_schema"] = schema.model_json_schema()
+        started = time.monotonic()
+
+        stored = self._stored(request, agent, profile, started)
+        if stored is not None:
+            return schema.model_validate_json(stored)
+
+        runnable = self._model(profile).with_structured_output(
+            schema, method="json_schema", include_raw=True
+        )
+        result, attempts = await self._invoke_with_retries(agent, runnable, system, messages, deadline)
+        record = self._done(agent, profile, started, attempts, result["raw"])
+
+        if result["parsing_error"] is not None:
+            raise LLMOutputInvalid(str(result["parsing_error"]), raw_text=result["raw"].text)
+        answer = result["parsed"]
+        self._store(request, answer.model_dump_json(), record)
+        return answer
+
+    async def chat(
+        self,
+        *,
+        agent: str,
+        profile: str,
+        system: str | list[dict],
+        messages: list[dict],
+        tools: list[dict],          # tool definitions: name, description, input_schema
+        prompt_version: str,
+        deadline: float,
+    ) -> "ChatTurn":
+        """One turn in which the model may ask for tool calls (several at once).
+
+        Returns the model's text and the calls it asked for; running the tools is
+        the caller's job. The model chooses whether to call tools (tool_choice
+        "auto"); forcing a tool call is not supported by current Claude models.
+        Same cache, retries, deadline and token counting as structured().
+        """
+        request = self._request(profile, system, messages, prompt_version)
+        request["tools"] = tools
+        started = time.monotonic()
+
+        stored = self._stored(request, agent, profile, started)
+        if stored is not None:
+            return ChatTurn.model_validate_json(stored)
+
+        runnable = self._model(profile).bind_tools(tools)
+        message, attempts = await self._invoke_with_retries(agent, runnable, system, messages, deadline)
+        record = self._done(agent, profile, started, attempts, message)
+        turn = ChatTurn(text=message.text,
+                        tool_calls=[ToolCall(name=c["name"], args=c["args"]) for c in message.tool_calls])
+        self._store(request, turn.model_dump_json(), record)
+        return turn
+
+    # --- shared steps of structured() and chat() ------------------------------------
+
+    def _request(self, profile, system, messages, prompt_version) -> dict:
+        """Everything that decides the answer; its hash is the cache key."""
         settings = self.cfg.profiles[profile]
-        request = {
+        return {
             "model": settings.model,
             "effort": settings.effort,
             "thinking": settings.thinking,
             "max_tokens": settings.max_tokens,
             "system": system,
             "messages": messages,
-            "output_schema": schema.model_json_schema(),
             "prompt_version": prompt_version,
         }
-        key = cache_key(request)
-        started = time.monotonic()
 
+    def _stored(self, request, agent, profile, started) -> str | None:
+        """The stored answer if the mode allows reading and there is one.
+        Raises LLMUnavailable in replay mode when nothing is stored."""
         if self.mode.reads and self.cache is not None:
-            stored = self.cache.get(key)
+            stored = self.cache.get(cache_key(request))
             if stored is not None:
                 self._record(agent, profile, started, attempts=0, cache_hit=True,
                              usage={"input_tokens": stored.input_tokens,
                                     "output_tokens": stored.output_tokens})
                 log.info("llm.cache_hit", agent=agent, profile=profile)
-                return schema.model_validate_json(stored.response_json)
-
+                return stored.response_json
         if not self.mode.calls_api:
             raise LLMUnavailable(f"{agent}: no recorded answer for this request (replay mode)")
+        return None
 
-        result, attempts = await self._invoke_with_retries(agent, profile, system, messages,
-                                                           schema, deadline)
-        usage = result["raw"].usage_metadata or {}
+    def _done(self, agent, profile, started, attempts, message) -> "CallRecord":
         record = self._record(agent, profile, started, attempts=attempts, cache_hit=False,
-                              usage=usage)
+                              usage=message.usage_metadata or {})
         log.info("llm.done", **record.model_dump())
+        return record
 
-        if result["parsing_error"] is not None:
-            raise LLMOutputInvalid(str(result["parsing_error"]), raw_text=result["raw"].text)
-
-        answer = result["parsed"]
+    def _store(self, request, response_json, record) -> None:
+        """Save a validated answer, if the mode writes."""
         if self.mode.writes and self.cache is not None:
-            self.cache.put(key, request, answer.model_dump_json(),
+            self.cache.put(cache_key(request), request, response_json,
                            record.input_tokens, record.output_tokens)
-        return answer
 
-    async def _invoke_with_retries(self, agent, profile, system, messages, schema, deadline):
+    async def _invoke_with_retries(self, agent, runnable, system, messages, deadline):
         """Call the API; retry retryable errors while the deadline allows.
 
         Each attempt may only use the time left before the deadline. A retry
@@ -160,9 +232,6 @@ class LLMClient:
         otherwise we give up straight away so the step can fall back in time.
         Returns (result, number of attempts).
         """
-        runnable = self._model(profile).with_structured_output(
-            schema, method="json_schema", include_raw=True
-        )
         chat = [{"role": "system", "content": system}, *messages]
         retries = self.cfg.retries
 

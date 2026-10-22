@@ -289,7 +289,7 @@ llm:
       model: claude-haiku-5-5
       effort: low
       max_tokens: 4000
-    coverage:        # tool loops that build each candidate pool
+    coverage:        # tool turn + final pool, per buyer type
       model: claude-sonnet-5-5
       effort: medium
       max_tokens: 16000
@@ -329,7 +329,7 @@ llm:
   #   analyst  -> evidence-only page marked "needs review"
   timeouts_seconds:
     intake: 10
-    coverage: 20
+    coverage: 25     # tool turn (~5 s) + final pool (~12-14 s), with headroom
     captain: 10
     analyst: 25      # notes + write; room for one repair
 

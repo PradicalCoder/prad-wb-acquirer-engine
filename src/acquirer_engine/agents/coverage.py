@@ -43,6 +43,7 @@ class CoverageResult(BaseModel):
     names: list[str]          # the final pool: the agent's candidates, then any top-ups
     topped_up: list[str]      # buyers added from the ranking to reach the pool minimum
     tool_calls: list[dict]    # what the agent asked for in turn 1, for the log
+    thesis_log: list[dict] = []   # each thesis: filters, buyers found, kept, reason
     fallback: bool
 
 
@@ -57,9 +58,10 @@ async def run_coverage(buyer_type: BuyerType, analysis: Analysis, client: LLMCli
                                   pool_max=schema.POOL_MAX,
                                   size_low=f"{low * analysis.target.ev_mm:.0f}",
                                   size_high=f"{high * analysis.target.ev_mm:.0f}")
+    seeds = run_seed_theses(tools, analysis.target, cfg)
     briefing = to_json({
         "target": analysis.target.model_dump(exclude_none=True),
-        "seed_theses": run_seed_theses(tools, analysis.target, cfg),
+        "seed_theses": seeds,
         "ranking": tools.get_buyer_rankings(cfg.coverage.rankings_top_k),
     })
     ask = dict(agent=agent, profile="coverage", system=cached_system(system),
@@ -88,7 +90,7 @@ async def run_coverage(buyer_type: BuyerType, analysis: Analysis, client: LLMCli
                 log.info("coverage.top_up", agent=agent, added=topped_up)
             return CoverageResult(buyer_type=buyer_type, pool=pool, names=names, topped_up=topped_up,
                                   tool_calls=[{"tool": c["tool"], "args": c["args"]} for c in calls],
-                                  fallback=False)
+                                  thesis_log=full_thesis_log(pool, seeds), fallback=False)
         log.info("coverage.repair", agent=agent, errors=errors)
         messages = messages + repair_turn(raw, errors)
     raise LLMOutputInvalid("; ".join(errors), raw_text=raw)
@@ -128,6 +130,23 @@ def validate_pool(pool, tools: CoverageTools, analysis: Analysis, cfg: Config) -
             if proxy != actual:
                 errors.append(f"{c.acquirer}: primary_sector_proxy is {actual}, not {proxy}.")
     return errors
+
+
+def full_thesis_log(pool, seeds: list[dict]) -> list[dict]:
+    """The agent's decisions, completed with what code already knows: for a seed
+    thesis its filters and the buyers it found; for a refinement, its new filters."""
+    by_id = {s["thesis_id"]: s for s in seeds}
+    log = []
+    for entry in pool.thesis_log:
+        row = {"thesis_id": entry.thesis_id, "kept": entry.kept, "reason": entry.reason}
+        if entry.refined_filters is not None:
+            row |= {"refined": True, "filters": entry.refined_filters.model_dump(exclude_defaults=True)}
+        elif entry.thesis_id in by_id:
+            seed = by_id[entry.thesis_id]
+            row |= {"filters": seed["filters"],
+                    "buyers_found": [b["acquirer"] for b in seed["result"]["buyers"]]}
+        log.append(row)
+    return log
 
 
 def coverage_fallback(buyer_type: BuyerType, analysis: Analysis, cfg: Config) -> CoverageResult:

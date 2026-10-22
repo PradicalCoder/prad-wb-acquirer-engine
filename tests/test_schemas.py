@@ -90,8 +90,7 @@ def pe_candidate(name, **extra):
 def pe_pool(candidates, thesis="P1"):
     return {
         "candidates": candidates,
-        "thesis_log": [{"thesis_id": thesis, "filters_used": {}, "buyers_found": [],
-                        "kept": True, "reason": "Found 12 buyers."}],
+        "thesis_log": [{"thesis_id": thesis, "kept": True, "reason": "Found 12 buyers."}],
         "reasoning_summary": "Summary.",
     }
 

@@ -12,6 +12,7 @@ from acquirer_engine.config import load_config
 from acquirer_engine.data import load_deals
 from acquirer_engine.evidence import analyze
 from acquirer_engine.llm import ChatTurn, LLMOutputInvalid
+from acquirer_engine.schemas import DealSearch
 
 CFG = load_config()
 
@@ -61,6 +62,19 @@ async def test_tool_results_reach_the_final_turn(analysis):
     final = client.calls[1][1]["messages"][0]["content"]
     assert "Checking Veritas size." in final and "typical_size_mm" in final   # profile result passed on
     assert "$100M" in client.calls[0][1]["system"][0]["text"]                  # size band filled from EV
+
+
+async def test_code_completes_the_thesis_log(analysis):
+    pool = pool_from_seeds(analysis)
+    refined = pool.thesis_log[0].model_copy(update={
+        "reason": "Widened the size band.",
+        "refined_filters": DealSearch(size_min=50.0, size_max=750.0)})
+    pool = pool.model_copy(update={"thesis_log": [*pool.thesis_log, refined]})
+    result = await cover(FakeClient(NO_TOOLS, pool), analysis)
+    p1 = result.thesis_log[0]
+    assert p1["thesis_id"] == "P1" and p1["filters"]["size_min"] == 75.0
+    assert "Welsh Carson" in p1["buyers_found"]           # filled by code from the seed results
+    assert result.thesis_log[-1]["refined"] and result.thesis_log[-1]["filters"]["size_max"] == 750.0
 
 
 async def test_invented_buyer_is_repaired(analysis):

@@ -153,13 +153,14 @@ class Removal(Model):
 
 
 class ThesisLog(Model):
-    """One thesis the agent tested: filters, who it found, and whether it was kept."""
+    """The agent's decision on one thesis: kept or dropped, and why. For a seed
+    thesis, code adds the filters and the buyers found (it already has them), so
+    the model doesn't spend time re-typing them. A refinement adds its filters."""
 
     thesis_id: ThesisId
-    filters_used: DealSearch
-    buyers_found: list[str]
     kept: bool
     reason: str
+    refined_filters: DealSearch | None = None   # only when this entry refines the thesis
 
 
 class CoveragePool(Model):

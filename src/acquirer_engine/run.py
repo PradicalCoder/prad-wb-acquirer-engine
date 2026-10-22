@@ -84,7 +84,7 @@ def run_report(state: RunState, client: LLMClient, mode: Mode, seconds: float) -
         "coverage": {pool.buyer_type: {
                          "pool": pool.names, "topped_up": pool.topped_up, "fallback": pool.fallback,
                          "removals": [r.model_dump() for r in pool.pool.removals] if pool.pool else [],
-                         "tool_calls": pool.tool_calls}
+                         "tool_calls": pool.tool_calls, "thesis_log": pool.thesis_log}
                      for pool in pools},
         # Statements the coverage agents made from general knowledge, not from the data.
         "public_knowledge_in_screening": [f"{pool.buyer_type}: {claim}" for pool in pools

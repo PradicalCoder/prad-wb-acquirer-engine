@@ -36,8 +36,7 @@ def pool_from_seeds(analysis, cfg, buyer_type="PE", n=7, removals=(), **changes)
         if buyer_type == "Strategic":
             c |= {"range_90": (0.03, 0.34), "primary_sector_proxy": None}
         candidates.append(c)
-    log = [{"thesis_id": s["thesis_id"], "filters_used": s["filters"], "kept": True, "reason": "ok",
-            "buyers_found": [b["acquirer"] for b in s["result"]["buyers"]]} for s in seeds]
+    log = [{"thesis_id": s["thesis_id"], "kept": True, "reason": "ok"} for s in seeds]
     schema = PECoveragePool if buyer_type == "PE" else StrategicCoveragePool
     return schema.model_validate({"candidates": candidates, "removals": list(removals),
                                   "thesis_log": log, "reasoning_summary": "Built from seeds."} | changes)

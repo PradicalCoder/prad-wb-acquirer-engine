@@ -1,0 +1,12 @@
+# secrets
+.env
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# run artifacts and local cache
+runs/
+.cache/

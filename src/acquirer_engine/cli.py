@@ -5,33 +5,14 @@ For now this only checks the inputs and creates the run folder. The pipeline
 """
 
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 
 import typer
 
+from acquirer_engine.cache import Mode
 from acquirer_engine.config import get_api_key, load_config
 
 app = typer.Typer(add_completion=False, help="Find the most likely acquirers for a target.")
-
-
-class Mode(str, Enum):
-    """How LLM calls are handled.
-
-    live    - use stored answers when available, otherwise call the API and store the answer
-    replay  - stored answers only; no API key needed
-    refresh - always call the API and overwrite stored answers
-    off     - always call the API, store nothing (for debugging)
-    """
-
-    live = "live"
-    replay = "replay"
-    refresh = "refresh"
-    off = "off"
-
-
-# Modes that may call the API, and therefore need a key.
-MODES_NEEDING_KEY = {Mode.live, Mode.refresh, Mode.off}
 
 
 @app.callback()
@@ -49,7 +30,7 @@ def run(
     config = load_config(config_path)
     request = text or config.default_banker_text
 
-    if mode in MODES_NEEDING_KEY and not get_api_key():
+    if mode.calls_api and not get_api_key():
         typer.echo(
             "No API key found. Set ANTHROPIC_API_KEY, "
             "or run with --mode replay to replay the recorded run.",

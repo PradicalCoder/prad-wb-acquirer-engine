@@ -8,6 +8,7 @@ unknown keys, so a misspelled setting is caught rather than silently ignored.
 
 import os
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from dotenv import load_dotenv
@@ -57,16 +58,20 @@ class Scoring(Section):
     recent_year: int
 
 
-class Models(Section):
-    fast: str
-    mid: str
-    strong: str
+class Profile(Section):
+    """How one kind of LLM call is made (see the comments in config.yaml)."""
+
+    model: str
+    effort: Literal["low", "medium", "high"]
+    thinking: Literal["adaptive", "between_tools"] = "adaptive"
+    max_tokens: int
 
 
 class Retries(Section):
     max_retries: int
     base_seconds: float
     cap_seconds: float
+    min_attempt_seconds: float
 
 
 class Timeouts(Section):
@@ -78,8 +83,7 @@ class Timeouts(Section):
 
 class LLM(Section):
     provider: str
-    models: Models
-    temperature: float
+    profiles: dict[str, Profile]
     max_concurrency: int
     retries: Retries
     timeouts_seconds: Timeouts

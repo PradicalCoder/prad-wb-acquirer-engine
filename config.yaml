@@ -178,25 +178,51 @@ scoring:
 llm:
   provider: anthropic
 
-  # Which model each kind of task uses.
-  models:
-    fast: claude-haiku-5-5      # intake: short parsing task
-    mid: claude-sonnet-5-5      # coverage agents and deal captain
-    strong: claude-sonnet-5-5   # analysts writing the one-pagers
-
-  # 0 = least random answers. Does not make calls fully repeatable; the
-  # answer cache does that.
-  temperature: 0
+  # One profile per kind of call.
+  #   model      - which Claude model answers
+  #   effort     - how hard it thinks: low | medium | high (more = slower, better)
+  #   thinking   - adaptive (thinks when useful) or between_tools (no thinking
+  #                before answering; used where the reasoning was done in an
+  #                earlier step)
+  #   max_tokens - longest answer allowed, thinking included
+  # No temperature setting: the API no longer accepts one. Repeat runs are made
+  # identical by the answer cache instead.
+  profiles:
+    intake:          # short parsing task
+      model: claude-haiku-5-5
+      effort: low
+      max_tokens: 4000
+    coverage:        # tool loops that build each candidate pool
+      model: claude-sonnet-5-5
+      effort: medium
+      max_tokens: 16000
+    captain:         # picks the final 10
+      model: claude-sonnet-5-5
+      effort: medium
+      max_tokens: 16000
+    analyst_notes:   # step A: reason about one buyer
+      model: claude-sonnet-5-5
+      effort: medium
+      max_tokens: 8000
+    analyst_write:   # step B: write the page from the notes
+      model: claude-sonnet-5-5
+      effort: low
+      thinking: between_tools
+      max_tokens: 8000
 
   # Most LLM calls running at the same time (e.g. the 10 analysts in parallel).
   max_concurrency: 10
 
-  # Retries apply only to rate limits and server errors, never to bad requests.
-  # Waits 0.5 s, then 1 s, never more than 2 s, with a little random jitter.
+  # Retries apply to rate limits (429), server errors (5xx, incl. 529 overloaded)
+  # and dropped connections; never to bad requests. Waits 0.5 s, then 1 s, never
+  # more than 2 s, with random jitter; a retry-after header from the API wins.
+  # A retry only starts if at least min_attempt_seconds of the step's time
+  # limit would remain after the wait; otherwise the step falls back.
   retries:
     max_retries: 2
     base_seconds: 0.5
     cap_seconds: 2.0
+    min_attempt_seconds: 3.0
 
   # Time limit per step, in seconds. On timeout the step falls back to a
   # rule-based result so the run always finishes:

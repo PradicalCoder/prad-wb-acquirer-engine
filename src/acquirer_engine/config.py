@@ -49,6 +49,10 @@ class Scoring(Section):
     mix_strategic: int
     min_per_type: int
     risk_percentile: float
+    integration_sector_weight: float
+    financing_size_ratio: float
+    antitrust_min_deals: int
+    max_ability_risks: int
     strong_relevance: float
     recent_year: int
 

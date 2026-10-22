@@ -155,6 +155,15 @@ scoring:
   # A risk is flagged when a buyer is worse than this share of buyers of its
   # own type (PE vs PE, strategic vs strategic). 0.75 = worst 25%.
   risk_percentile: 0.75
+  # Integration risk counts deals in sectors weighted below this (far from ours).
+  integration_sector_weight: 0.5
+  # Financing risk also fires when the buyer's median deal is below this share
+  # of the target's EV (0.5 = typically buys companies under half our size).
+  financing_size_ratio: 0.5
+  # Antitrust risk (strategics only): this many or more deals in the target's sector.
+  antitrust_min_deals: 2
+  # Ability is High when at most this many Value/Certainty/Speed risks fired.
+  max_ability_risks: 1
   # A past deal at or above this relevance counts as a "strong precedent".
   strong_relevance: 0.4
   # High willingness needs at least two strong precedents, the latest one

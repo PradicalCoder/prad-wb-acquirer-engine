@@ -36,6 +36,7 @@ class Scoring(Section):
     size_floor: float
     deal_type_tiers: dict[DealType, float]
     ownership_miss: float
+    geography_miss: float
     margin_strong_percentile: float
     margin_medium: float
     margin_weak: float

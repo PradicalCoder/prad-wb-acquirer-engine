@@ -107,6 +107,10 @@ scoring:
   # --- Target profile -----------------------------------------------------
   # Past deal whose target was public or non-profit (a different sale process).
   ownership_miss: 0.7
+  # Past deal in a different single region from the target's. Only used when
+  # the target's region is known; deals marked National or Multi-Regional
+  # always count fully.
+  geography_miss: 0.7
   # Margin bands are judged within each sector: weak = below the sector
   # median, medium = median up to this percentile, strong = this percentile
   # or above. 0.65 = the top 35% of the sector counts as strong.

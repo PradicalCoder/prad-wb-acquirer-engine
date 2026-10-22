@@ -1,0 +1,191 @@
+# All tunable settings for the engine, read once at startup by config.py.
+# Secrets (the API key) live in .env, never here.
+# Each setting notes what it means and which part of the code reads it.
+
+
+# ---------------------------------------------------------------------------
+# paths: where files are read from and written to
+# ---------------------------------------------------------------------------
+paths:
+  # The deal dataset (500 past M&A transactions). Loaded once by the data loader.
+  data_csv: data/ma_transactions_500.csv
+
+  # Each run writes a timestamped folder here (HTML and Markdown report,
+  # run.log, run_report.json). Created by the CLI.
+  runs_dir: runs
+
+  # Local database of past LLM answers. Asking the exact same question twice
+  # returns the stored answer instead of calling the API. Used by the LLM client.
+  llm_cache: .cache/llm_cache.sqlite
+
+
+# ---------------------------------------------------------------------------
+# The request used when `acquirer-engine run` is given no --text.
+# The CLI passes it to the intake agent, which turns it into structured fields.
+# ---------------------------------------------------------------------------
+default_banker_text: >-
+  I need to quickly identify the 10 most likely acquirers for a $200M healthcare
+  services company. Sector: Healthcare Services, Deal Size: ~$200M EV,
+  Profile: Mid-market, private, regional, strong EBITDA margins.
+
+
+# ---------------------------------------------------------------------------
+# default_target: the same request, already structured.
+# Safety net: if the intake LLM call fails on the default text, the run uses
+# these fields instead of stopping.
+# ---------------------------------------------------------------------------
+default_target:
+  # One of the 10 sectors in the dataset. Drives sector weights, margin bands
+  # and the valuation comps.
+  sector: Healthcare Services
+
+  # Enterprise value in $M. Size similarity of every past deal is measured
+  # against this number.
+  ev_mm: 200.0
+
+  # Which pre-sale owner types count as "private". Both are privately held.
+  # Past deals whose target had one of these owners get full ownership weight.
+  ownership: [Private, PE-Backed]
+
+  # A single region (e.g. Midwest), or null if none was named. null means
+  # geography is ignored when scoring deals rather than guessed.
+  region: null
+
+  # weak / medium / strong margins, judged against the target's own sector
+  # (strong = top 35% of the sector). Used to estimate revenue and EBITDA.
+  margin_band: strong
+
+
+# ---------------------------------------------------------------------------
+# scoring: how relevant each past deal is, and how buyers are shortlisted.
+# Read by the scoring code (no LLM involved).
+#
+# Every past deal gets a relevance score from 0 to 1:
+#   relevance = sector x size x deal type x ownership x margin x geography x recency
+# Each factor is a weight between 0 and 1, so one big mismatch (wrong sector,
+# very different size) pulls the score down hard; small mismatches only trim it.
+# ---------------------------------------------------------------------------
+scoring:
+  # --- Sector -------------------------------------------------------------
+  # Deals in the target's own sector always get 1.0.
+  # A deal in another sector gets sector_mult x lift, where lift says how often
+  # buyers of the target's sector also buy in that one (1.0 = normal rate).
+  # So a sector with normal overlap gets 0.5; a strongly linked one gets more.
+  sector_mult: 0.5
+  # Lowest weight for an unrelated sector: it still counts a little.
+  sector_floor: 0.1
+  # Highest weight for another sector: it can never equal the target's own (1.0).
+  sector_cap: 0.9
+
+  # --- Size ---------------------------------------------------------------
+  # Size is judged in doublings, not dollars: half or double the target's
+  # size are equally far away.
+  #   weight = max(size_base ^ (doublings away ^ 2), size_floor)
+  # With 0.8: 2x or 0.5x -> 0.80, 4x or 0.25x -> 0.41, 8x or 0.125x -> 0.13.
+  size_base: 0.8
+  # Any deal, however far off in size, counts at least this much.
+  size_floor: 0.05
+
+  # --- Deal type ----------------------------------------------------------
+  # The seller is offering the whole company, so deals where the buyer took
+  # control of a whole company are the best evidence.
+  deal_type_tiers:
+    # 1.0: full control of a whole company
+    Leveraged Buyout: 1.0
+    Platform Investment: 1.0
+    Management Buyout: 1.0
+    Bolt-on Acquisition: 1.0
+    Strategic Acquisition: 1.0
+    # 0.6: shows appetite for the space, but not a clean whole-company buy
+    Recapitalization: 0.6
+    Minority Investment: 0.6
+    Carve-out: 0.6
+    # 0.3: structurally unlike a private company sale; counts a little
+    SPAC Merger: 0.3
+    Merger of Equals: 0.3
+
+  # --- Target profile -----------------------------------------------------
+  # Past deal whose target was public or non-profit (a different sale process).
+  ownership_miss: 0.7
+  # Past deal whose target had medium margins for its own sector
+  # (strong margins = 1.0).
+  margin_medium: 0.85
+  # Past deal whose target had below-median margins for its own sector.
+  margin_weak: 0.7
+
+  # --- Recency ------------------------------------------------------------
+  # Age is counted back from the latest year in the dataset, not today.
+  # Each row: [up to this many years old, weight].
+  # 0-1 years -> 1.0, 2-3 years -> 0.9, 4-6 years -> 0.75.
+  recency_steps:
+    - [1, 1.0]
+    - [3, 0.9]
+    - [6, 0.75]
+  # Anything older. Decay is gentle: old deals still show the buyer has done this.
+  recency_old: 0.6
+
+  # --- Valuation ----------------------------------------------------------
+  # The valuation comps table is the N most relevant closed deals.
+  # Median EV/Revenue and EV/EBITDA are taken from these rows.
+  top_n_comps: 20
+
+  # --- Shortlist ----------------------------------------------------------
+  # Most candidates each coverage agent (PE, strategic) may put forward.
+  # If an agent fails, the top N from its ranking are used instead.
+  pool_size: 8
+  # Default split of the final 10. The deal captain may move one seat
+  # either way (7/3 or 5/5) with a written reason.
+  mix_pe: 6
+  mix_strategic: 4
+  # Neither buyer type can fall below this many seats.
+  min_per_type: 3
+
+  # --- Risk and conviction ------------------------------------------------
+  # A risk is flagged when a buyer is worse than this share of buyers of its
+  # own type (PE vs PE, strategic vs strategic). 0.75 = worst 25%.
+  risk_percentile: 0.75
+  # A past deal at or above this relevance counts as a "strong precedent".
+  strong_relevance: 0.4
+  # High willingness needs at least two strong precedents, the latest one
+  # in this year or later.
+  recent_year: 2021
+
+
+# ---------------------------------------------------------------------------
+# llm: model choice and how calls behave. Read by the LLM client and the
+# graph's node wrapper.
+# ---------------------------------------------------------------------------
+llm:
+  provider: anthropic
+
+  # Which model each kind of task uses.
+  models:
+    fast: claude-haiku-5-5      # intake: short parsing task
+    mid: claude-sonnet-5-5      # coverage agents and deal captain
+    strong: claude-sonnet-5-5   # analysts writing the one-pagers
+
+  # 0 = least random answers. Does not make calls fully repeatable; the
+  # answer cache does that.
+  temperature: 0
+
+  # Most LLM calls running at the same time (e.g. the 10 analysts in parallel).
+  max_concurrency: 10
+
+  # Retries apply only to rate limits and server errors, never to bad requests.
+  # Waits 0.5 s, then 1 s, never more than 2 s, with a little random jitter.
+  retries:
+    max_retries: 2
+    base_seconds: 0.5
+    cap_seconds: 2.0
+
+  # Time limit per step, in seconds. On timeout the step falls back to a
+  # rule-based result so the run always finishes:
+  #   intake   -> default_target (only for the default text; otherwise stop)
+  #   coverage -> top candidates from the ranking
+  #   captain  -> default 6/4 split in ranking order
+  #   analyst  -> evidence-only page marked "needs review"
+  timeouts_seconds:
+    intake: 10
+    coverage: 20
+    captain: 10
+    analyst: 20

@@ -107,6 +107,10 @@ scoring:
   # --- Target profile -----------------------------------------------------
   # Past deal whose target was public or non-profit (a different sale process).
   ownership_miss: 0.7
+  # Margin bands are judged within each sector: weak = below the sector
+  # median, medium = median up to this percentile, strong = this percentile
+  # or above. 0.65 = the top 35% of the sector counts as strong.
+  margin_strong_percentile: 0.65
   # Past deal whose target had medium margins for its own sector
   # (strong margins = 1.0).
   margin_medium: 0.85

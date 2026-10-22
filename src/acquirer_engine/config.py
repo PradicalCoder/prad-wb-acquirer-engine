@@ -8,11 +8,12 @@ unknown keys, so a misspelled setting is caught rather than silently ignored.
 
 import os
 from pathlib import Path
-from typing import Literal
 
 import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict
+
+from acquirer_engine.data import DealType, TargetProfile
 
 
 class Section(BaseModel):
@@ -27,22 +28,15 @@ class Paths(Section):
     llm_cache: Path
 
 
-class DefaultTarget(Section):
-    sector: str
-    ev_mm: float
-    ownership: list[str]
-    region: str | None
-    margin_band: Literal["weak", "medium", "strong"]
-
-
 class Scoring(Section):
     sector_mult: float
     sector_floor: float
     sector_cap: float
     size_base: float
     size_floor: float
-    deal_type_tiers: dict[str, float]
+    deal_type_tiers: dict[DealType, float]
     ownership_miss: float
+    margin_strong_percentile: float
     margin_medium: float
     margin_weak: float
     recency_steps: list[tuple[int, float]]  # (up to N years old, weight)
@@ -88,7 +82,7 @@ class LLM(Section):
 class Config(Section):
     paths: Paths
     default_banker_text: str
-    default_target: DefaultTarget
+    default_target: TargetProfile  # same model the intake agent produces
     scoring: Scoring
     llm: LLM
 

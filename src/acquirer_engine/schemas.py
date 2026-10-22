@@ -13,7 +13,13 @@ from typing import Any, ClassVar, Literal, get_args
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from acquirer_engine.data import Sector, TargetProfile
-from acquirer_engine.scoring.risk import ConvictionLevel, Lens, RiskName
+
+# Shared with the risk scoring code, which imports them from here.
+RiskName = Literal[
+    "integration", "financing", "execution", "bidders", "time_to_close", "price", "antitrust",
+]
+Lens = Literal["Value", "Certainty", "Speed"]      # how a seller weighs a bid
+ConvictionLevel = Literal["High", "Medium", "Low"]
 
 PEThesis = Literal["P1", "P2", "P3"]       # platform builders, add-on acquirers, roll-ups
 StrategicThesis = Literal["S1", "S3"]      # health systems expanding, cross-selling consolidators
@@ -228,9 +234,9 @@ class ConvictionCall(Model):
     rationale: str   # 1-2 sentences citing numbers
 
 
-class OnePager(Model):
-    """Step B: one buyer's page. The precedent and comps tables are added by code
-    from the data, so the model writes only the prose around them."""
+class OnePagerDraft(Model):
+    """Step B: one buyer's page as the model writes it. The precedent and comps
+    tables are added by code from the data, so the model writes only the prose."""
 
     acquirer: str
     overview: str           # who they are as a buyer
@@ -240,4 +246,10 @@ class OnePager(Model):
     risks: list[RiskItem] = Field(min_length=2)
     conviction: ConvictionCall
     public_knowledge: list[str] = []   # claims not from the data, labeled on the page
-    needs_review: bool = False         # set by code on a fallback page, never by the model
+
+
+class OnePage(OnePagerDraft):
+    """The page as shipped: the draft plus fields only code sets. Kept separate so
+    the model never sees (or fills) them."""
+
+    needs_review: bool = False   # True on a fallback page or one that failed repair

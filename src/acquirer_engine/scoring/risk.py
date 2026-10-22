@@ -25,13 +25,9 @@ from pydantic import BaseModel
 
 from acquirer_engine.config import Scoring
 from acquirer_engine.data import TargetProfile
+from acquirer_engine.schemas import ConvictionLevel, Lens, RiskName
 
-RiskName = Literal[
-    "integration", "financing", "execution", "bidders", "time_to_close", "price", "antitrust",
-]
-Lens = Literal["Value", "Certainty", "Speed"]
-Level = Literal["High", "Low"]
-ConvictionLevel = Literal["High", "Medium", "Low"]
+Level = Literal["High", "Low"]   # willingness and ability
 
 SIGNALS: list[RiskName] = list(get_args(RiskName))
 LENS: dict[RiskName, Lens] = {

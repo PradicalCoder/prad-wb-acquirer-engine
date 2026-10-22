@@ -9,7 +9,8 @@ from acquirer_engine.schemas import (
     ConvictionAdjustment,
     FinalSelection,
     IntakeResult,
-    OnePager,
+    OnePage,
+    OnePagerDraft,
     PECoveragePool,
     StrategicCandidate,
 )
@@ -120,10 +121,21 @@ def test_notes_reject_unknown_risk():
         )
 
 
+RISK = {"name": "execution", "lens": "Certainty", "status": "fired", "text": "2 of 17 withdrawn."}
+PAGE = {"acquirer": "KKR", "overview": "o", "fit_thesis": "f", "precedent_note": "p",
+        "valuation_note": "v", "conviction": {"level": "Medium", "rationale": "r"}}
+
+
 def test_one_pager_needs_two_risks():
-    risk = {"name": "execution", "lens": "Certainty", "status": "fired", "text": "2 of 17 withdrawn."}
     with pytest.raises(ValidationError):
-        OnePager(
-            acquirer="KKR", overview="o", fit_thesis="f", precedent_note="p", valuation_note="v",
-            risks=[risk], conviction={"level": "Medium", "rationale": "r"},
-        )
+        OnePagerDraft(**PAGE, risks=[RISK])
+
+
+def test_code_only_fields_are_hidden_from_the_model():
+    assert "needs_review" not in OnePagerDraft.model_json_schema()["properties"]
+    with pytest.raises(ValidationError):
+        OnePagerDraft(**PAGE, risks=[RISK, RISK], needs_review=True)
+
+    draft = OnePagerDraft(**PAGE, risks=[RISK, RISK])
+    page = OnePage(**draft.model_dump(), needs_review=True)
+    assert page.needs_review

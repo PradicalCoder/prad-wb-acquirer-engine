@@ -18,7 +18,7 @@ Conviction = willingness x ability:
   High x High -> High, Low x Low -> Low, otherwise Medium.
 """
 
-from typing import Literal, NamedTuple
+from typing import Literal, NamedTuple, get_args
 
 import pandas as pd
 from pydantic import BaseModel
@@ -26,8 +26,15 @@ from pydantic import BaseModel
 from acquirer_engine.config import Scoring
 from acquirer_engine.data import TargetProfile
 
-SIGNALS = ["integration", "financing", "execution", "bidders", "time_to_close", "price", "antitrust"]
-LENS = {
+RiskName = Literal[
+    "integration", "financing", "execution", "bidders", "time_to_close", "price", "antitrust",
+]
+Lens = Literal["Value", "Certainty", "Speed"]
+Level = Literal["High", "Low"]
+ConvictionLevel = Literal["High", "Medium", "Low"]
+
+SIGNALS: list[RiskName] = list(get_args(RiskName))
+LENS: dict[RiskName, Lens] = {
     "price": "Value",
     "financing": "Certainty", "antitrust": "Certainty",
     "execution": "Certainty", "integration": "Certainty",
@@ -43,8 +50,6 @@ VALUE_COLUMN = {
     "antitrust": "same_sector_deals",
 }
 
-Level = Literal["High", "Low"]
-
 
 class RiskTable(NamedTuple):
     values: pd.DataFrame       # raw signal per buyer (e.g. share of deals withdrawn)
@@ -53,8 +58,8 @@ class RiskTable(NamedTuple):
 
 
 class RiskFlag(BaseModel):
-    name: str
-    lens: str
+    name: RiskName
+    lens: Lens
     status: Literal["fired", "watch"]  # watch = not flagged, but the buyer's weakest spots
     value: float | None
     percentile: float | None
@@ -63,7 +68,7 @@ class RiskFlag(BaseModel):
 class Conviction(BaseModel):
     willingness: Level
     ability: Level
-    level: Literal["High", "Medium", "Low"]
+    level: ConvictionLevel
     strong_deal_ids: list[str]
     latest_strong_year: int | None
     ability_risks: list[str]

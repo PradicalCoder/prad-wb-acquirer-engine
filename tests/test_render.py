@@ -8,7 +8,7 @@ from acquirer_engine.data import load_deals
 from acquirer_engine.evidence import analyze
 from acquirer_engine.graph import annotated_pack
 from acquirer_engine.llm import LLMUnavailable
-from acquirer_engine.render import money, multiple, render
+from acquirer_engine.render import money, multiple, ownership_label, render
 from acquirer_engine.run import run_report
 from acquirer_engine.schemas import IntakeResult
 
@@ -88,3 +88,5 @@ async def test_rendering_is_repeatable(analysis, deals):
 def test_formatting():
     assert money(159.7) == "$159.7M" and money(1250.0) == "$1.2B" and money(None) == "–"
     assert multiple(2.4908) == "2.49x"
+    assert ownership_label(["Private", "PE-Backed"]) == "Private (privately held)"
+    assert ownership_label(["PE-Backed"]) == "PE-Backed" and ownership_label(None) == "not stated"

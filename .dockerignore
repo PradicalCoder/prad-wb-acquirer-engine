@@ -1,0 +1,14 @@
+# Keep the image small and free of secrets and local state.
+.env
+.git
+.venv
+.cache
+runs
+tests
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+docs
+reference
+CLAUDE.md

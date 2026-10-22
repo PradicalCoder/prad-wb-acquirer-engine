@@ -100,7 +100,7 @@
   <div class="facts">
     <div><span>Sector</span><b>{{ target.sector }}</b></div>
     <div><span>Enterprise value</span><b>{{ target.ev_mm | money }}</b></div>
-    <div><span>Ownership</span><b>{{ target.ownership | join(', ') if target.ownership else 'not stated' }}</b></div>
+    <div><span>Ownership</span><b>{{ ownership }}</b></div>
     <div><span>Region</span><b>{{ target.region or 'not stated' }}</b></div>
     <div><span>Margins</span><b>{{ target.margin_band or 'not stated' }} (vs sector)</b></div>
     {% if estimate %}

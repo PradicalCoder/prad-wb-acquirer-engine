@@ -46,6 +46,7 @@ def build_view(state: RunState, report: dict, cfg: Config) -> dict:
                     + f"Comps {comps.ev_revenue.median:.2f}x EV/Revenue "
                     + f"({comps.ev_revenue.q1:.2f}–{comps.ev_revenue.q3:.2f}x)",
         "target": analysis.target,
+        "ownership": ownership_label(analysis.target.ownership),
         "estimate": analysis.estimate,
         "comps": comps,
         "comps_rows": analysis.comps.to_dict("records"),
@@ -81,6 +82,16 @@ def _buyer(rank: int, name: str, state: RunState, cfg: Config) -> dict:
 
 
 # --- formatting --------------------------------------------------------------------
+
+def ownership_label(ownership: list[str] | None) -> str:
+    """How the request described ownership: "private" covers both privately held
+    owner types, so show it that way rather than as the two data labels."""
+    if not ownership:
+        return "not stated"
+    if set(ownership) == {"Private", "PE-Backed"}:
+        return "Private (privately held)"
+    return ", ".join(ownership)
+
 
 def money(value: float | None) -> str:
     """$159.7M; $1.2B from 1,000M up."""

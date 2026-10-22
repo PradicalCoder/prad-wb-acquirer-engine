@@ -17,7 +17,7 @@
 
 |---|---|---|---|---|{% if estimate %}---|{% endif %}
 
-| {{ target.sector }} | {{ target.ev_mm | money }} | {{ target.ownership | join(', ') if target.ownership else 'not stated' }} | {{ target.region or 'not stated' }} | {{ target.margin_band or 'not stated' }} (vs sector) |{% if estimate %} {{ estimate.revenue_mm | money }} / {{ estimate.ebitda_mm | money }} ({{ estimate.peer_ids | length }} peers) |{% endif %}
+| {{ target.sector }} | {{ target.ev_mm | money }} | {{ ownership }} | {{ target.region or 'not stated' }} | {{ target.margin_band or 'not stated' }} (vs sector) |{% if estimate %} {{ estimate.revenue_mm | money }} / {{ estimate.ebitda_mm | money }} ({{ estimate.peer_ids | length }} peers) |{% endif %}
 
 
 ## The ten most likely acquirers

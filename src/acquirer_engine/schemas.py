@@ -8,11 +8,11 @@ the evidence?) are checked by the validator after parsing.
 Order follows the run: intake -> coverage -> deal captain -> analyst.
 """
 
-from typing import Any, ClassVar, Literal, get_args
+from typing import ClassVar, Literal, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from acquirer_engine.data import Sector, TargetProfile
+from acquirer_engine.data import DealType, Outcome, Sector, Tag, TargetProfile
 
 # Shared with the risk scoring code, which imports them from here.
 RiskName = Literal[
@@ -100,6 +100,23 @@ class IntakeResult(Model):
 
 # --- Coverage agents ----------------------------------------------------------
 
+class DealSearch(Model):
+    """Filters for the search_deals tool, and how a thesis's filters are logged.
+    Every field is optional; the buyer type is never a filter here (each agent's
+    tools are locked to its own type)."""
+
+    sectors: list[Sector] | None = None
+    deal_types: list[DealType] | None = None
+    size_min: float | None = None           # $M
+    size_max: float | None = None
+    year_min: int | None = None
+    year_max: int | None = None
+    tags_any: list[Tag] | None = None       # deals with at least one of these tags
+    outcomes: list[Outcome] | None = None
+    min_relevance: float = 0.0
+    group_by_buyer: bool = True             # one row per buyer instead of per deal
+
+
 class Candidate(Model):
     acquirer: str
     evidence_ids: list[str] = Field(min_length=1)   # transaction_ids behind the pick
@@ -139,7 +156,7 @@ class ThesisLog(Model):
     """One thesis the agent tested: filters, who it found, and whether it was kept."""
 
     thesis_id: ThesisId
-    filters_used: dict[str, Any]
+    filters_used: DealSearch
     buyers_found: list[str]
     kept: bool
     reason: str

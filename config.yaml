@@ -175,6 +175,65 @@ scoring:
 
 
 # ---------------------------------------------------------------------------
+# coverage: how the PE and strategic coverage agents search for candidates.
+# ---------------------------------------------------------------------------
+coverage:
+  # Sectors grouped by kind of business. A thesis searches the target's family
+  # unless it names its own sectors.
+  sector_families:
+    provider_services: [Healthcare Services, Physician Groups, Behavioral Health,
+                        Home Health/Hospice, Dental]
+    payers: [Health Insurance]
+    health_tech_and_services: [Health IT, Revenue Cycle]
+    products: [Medical Devices, Pharma/Biotech]
+
+  # Seed theses: the banker's stories for who might buy, each written as deal
+  # search filters. They run in code before the agent's first turn.
+  # size = [low, high] as multiples of the target's EV (0.375 x $200M = $75M).
+  theses:
+    P1:
+      buyer_type: PE
+      name: Platform builders
+      story: PE firms that buy a company like ours as the base of a new healthcare
+        platform, then grow it with add-ons.
+      deal_types: [Platform Investment, Leveraged Buyout, Management Buyout]
+      size: [0.375, 2.5]
+      year_min: 2018
+    P2:
+      buyer_type: PE
+      name: Add-on acquirers
+      story: PE firms that already own a business in this space and would bolt ours on.
+      deal_types: [Bolt-on Acquisition]
+      size: [0.25, 2.5]
+    P3:
+      buyer_type: PE
+      name: Roll-up players
+      story: PE firms whose deals are about consolidating a fragmented market.
+      tags_any: [Platform Build, Scale, Market Share]
+      size: [0.375, 2.5]
+      min_relevance: 0.2
+    S1:
+      buyer_type: Strategic
+      name: Health systems expanding services
+      story: Hospital and health systems buying services businesses to broaden
+        what they offer or where they operate.
+      deal_types: [Strategic Acquisition, Bolt-on Acquisition, Platform Investment,
+                   Leveraged Buyout, Management Buyout]
+      sectors: [Healthcare Services, Physician Groups]
+      size: [0.25, 3.0]
+    S3:
+      buyer_type: Strategic
+      name: Consolidators cross-selling
+      story: Provider platforms buying adjacent services to cross-sell to their
+        existing patients.
+      tags_any: [Cross-sell, Diversification]
+      size: [0.25, 3.0]
+
+  rankings_top_k: 12   # how many ranked buyers each agent sees up front
+  top_n: 10            # most buyers (or deals) one tool result lists
+
+
+# ---------------------------------------------------------------------------
 # validation: code checks on every one-page rationale before it ships.
 # A failed page goes back to the analyst with the errors (at most
 # max_repairs times), then ships as an evidence-only page marked for review.

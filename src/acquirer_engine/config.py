@@ -14,7 +14,7 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict
 
-from acquirer_engine.data import DealType, TargetProfile
+from acquirer_engine.data import BuyerType, DealType, Sector, Tag, TargetProfile
 
 
 class Section(BaseModel):
@@ -57,6 +57,27 @@ class Scoring(Section):
     ebitda_mismatch: float
     strong_relevance: float
     recent_year: int
+
+
+class Thesis(Section):
+    """One seed thesis: a buyer story written as deal search filters."""
+
+    buyer_type: BuyerType
+    name: str
+    story: str
+    size: tuple[float, float]            # multiples of the target's EV
+    deal_types: list[DealType] | None = None
+    sectors: list[Sector] | None = None  # None = the target's sector family
+    tags_any: list[Tag] | None = None
+    year_min: int | None = None
+    min_relevance: float = 0.0
+
+
+class Coverage(Section):
+    sector_families: dict[str, list[Sector]]
+    theses: dict[str, Thesis]
+    rankings_top_k: int
+    top_n: int
 
 
 class Validation(Section):
@@ -105,6 +126,7 @@ class Config(Section):
     default_banker_text: str
     default_target: TargetProfile  # same model the intake agent produces
     scoring: Scoring
+    coverage: Coverage
     validation: Validation
     llm: LLM
 

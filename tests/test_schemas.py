@@ -15,6 +15,7 @@ from acquirer_engine.schemas import (
     OnePagerDraft,
     PECoveragePool,
     StrategicCandidate,
+    StrategicCoveragePool,
     TargetField,
 )
 
@@ -36,11 +37,27 @@ def test_target_fields_literal_matches_target_profile():
     assert set(get_args(TargetField)) == set(TargetProfile.model_fields)
 
 
-def test_sources_reach_the_api_as_a_list():
-    """A dict field would become an object with no allowed keys (only {} valid)."""
+def _free_form_objects(node, path="$"):
+    """Paths of objects with no fixed keys: under structured outputs these can only be {}."""
+    found = []
+    if isinstance(node, dict):
+        if node.get("type") == "object" and not node.get("properties"):
+            found.append(path)
+        for key, value in node.items():
+            found += _free_form_objects(value, f"{path}.{key}")
+    elif isinstance(node, list):
+        for i, value in enumerate(node):
+            found += _free_form_objects(value, f"{path}[{i}]")
+    return found
+
+
+@pytest.mark.parametrize("schema", [IntakeResult, PECoveragePool, StrategicCoveragePool,
+                                    FinalSelection, AnalystNotes, OnePagerDraft])
+def test_llm_schemas_have_no_free_form_objects(schema):
+    """A dict field becomes an object with no allowed keys, so the model can only
+    answer {} (this broke intake once). Every LLM-facing schema must avoid it."""
     from langchain_anthropic.chat_models import _convert_to_anthropic_output_config_format
-    schema = _convert_to_anthropic_output_config_format(IntakeResult)["schema"]
-    assert schema["properties"]["sources"]["type"] == "array"
+    assert _free_form_objects(_convert_to_anthropic_output_config_format(schema)["schema"]) == []
 
 
 def test_intake_sets_exactly_one_of_target_and_stop_reason():

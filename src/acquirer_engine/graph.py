@@ -35,11 +35,19 @@ import structlog
 from langgraph.graph import END, START, StateGraph
 
 from acquirer_engine.agents.analyst import AnalystResult, fallback_page, revise, run_analyst
+from acquirer_engine.agents.captain import (
+    CaptainResult,
+    alternates,
+    baseline_diff,
+    captain_fallback,
+    run_captain,
+)
+from acquirer_engine.agents.coverage import CoverageResult, coverage_fallback, run_coverage
 from acquirer_engine.agents.intake import IntakeOutcome, intake_fallback, run_intake
 from acquirer_engine.config import Config
-from acquirer_engine.evidence import Analysis, analyze, build_evidence
+from acquirer_engine.evidence import Analysis, EvidencePack, analyze, build_evidence
 from acquirer_engine.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
-from acquirer_engine.scoring.buyers import order_final, top_of_type
+from acquirer_engine.scoring.buyers import order_final
 from acquirer_engine.validate import similar_theses
 
 log = structlog.get_logger()
@@ -53,12 +61,15 @@ class RunState(TypedDict, total=False):
     banker_text: str
     intake: IntakeOutcome
     analysis: Analysis
-    pool_pe: list[str]
-    pool_strategic: list[str]
+    pool_pe: CoverageResult
+    pool_strategic: CoverageResult
+    captain: CaptainResult
     selection: list[str]
     results: dict[str, AnalystResult]
     flags: list[str]
     final_order: list[str]
+    baseline_diff: list[dict]
+    alternates: list[str]
     events: Annotated[list[dict], operator.add]
 
 
@@ -125,18 +136,45 @@ def build_graph(run: Run):
     async def score(state, deadline):
         return {"analysis": analyze(run.deals, state["intake"].target, cfg.scoring)}
 
-    # --- coverage and captain: rule-based until the agents are built ------------
-    def pool(buyer_type):
+    # --- coverage: one agent per buyer type, run side by side ---------------------
+    def coverage(buyer_type):
+        key = "pool_pe" if buyer_type == "PE" else "pool_strategic"
+
         async def work(state, deadline):
-            names = list(top_of_type(state["analysis"].rankings, buyer_type, cfg.scoring.pool_size).index)
-            key = "pool_pe" if buyer_type == "PE" else "pool_strategic"
-            return {key: names, "_status": "rule_based"}
-        return work
+            return {key: await run_coverage(buyer_type, state["analysis"], client, cfg, deadline)}
+
+        def fallback(state):
+            return {key: coverage_fallback(buyer_type, state["analysis"], cfg)}
+        return work, fallback
+
+    # --- captain: the final 10 from both pools ----------------------------------
+    def pools(state) -> dict:
+        return {"PE": state["pool_pe"], "Strategic": state["pool_strategic"]}
 
     async def captain(state, deadline):
-        picks = (state["pool_pe"][:cfg.scoring.mix_pe]
-                 + state["pool_strategic"][:cfg.scoring.mix_strategic])
-        return {"selection": picks, "_status": "rule_based"}
+        result = await run_captain(pools(state), state["analysis"], client, cfg, deadline)
+        return {"captain": result, "selection": result.names}
+
+    def captain_fb(state):
+        result = captain_fallback(pools(state), state["analysis"], cfg)
+        return {"captain": result, "selection": result.names}
+
+    def pack(buyer: str, state) -> EvidencePack:
+        """The buyer's evidence, plus why it was shortlisted (theses, notes)."""
+        evidence = build_evidence(buyer, state["analysis"])
+        pool = pools(state)[evidence.profile.buyer_type]
+        candidate = next((c for c in pool.pool.candidates if c.acquirer == buyer), None) if pool.pool else None
+        selection = state["captain"].selection
+        pick = next((p for p in selection.picks if p.acquirer == buyer), None) if selection else None
+        note = candidate.note if candidate else ("Added from the ranking to fill the pool."
+                                                 if buyer in pool.topped_up else None)
+        if getattr(candidate, "caveat", None):
+            note = f"{note} Caveat: {candidate.caveat}"
+        return evidence.model_copy(update={
+            "theses": [f"{t}: {cfg.coverage.theses[t].name}" for t in (candidate.theses if candidate else [])],
+            "coverage_note": note,
+            "captain_reason": pick.why_selected if pick else None,
+        })
 
     # --- analysts: all at once; one failing never stops the others --------------
     async def analysts(state, deadline):
@@ -144,9 +182,9 @@ def build_graph(run: Run):
 
         async def one(buyer):
             started = time.monotonic()
-            pack = build_evidence(buyer, analysis)
-            log.info("analyst.start", buyer=buyer, pack_sha256=_sha(pack.model_dump_json()))
-            result = await run_analyst(pack, client, cfg, run.deadline(limits.analyst))
+            evidence = pack(buyer, state)
+            log.info("analyst.start", buyer=buyer, pack_sha256=_sha(evidence.model_dump_json()))
+            result = await run_analyst(evidence, client, cfg, run.deadline(limits.analyst))
             return result, round(time.monotonic() - started, 2)
 
         outcomes = await asyncio.gather(*(one(b) for b in selection), return_exceptions=True)
@@ -188,7 +226,7 @@ def build_graph(run: Run):
                         f"\"{results[other].page.fit_thesis}\" Rewrite the page so its fit "
                         f"thesis rests on what is specific to {lower}.")
             try:
-                results[lower] = await revise(results[lower], build_evidence(lower, state["analysis"]),
+                results[lower] = await revise(results[lower], pack(lower, state),
                                               feedback, client, cfg, run.deadline(limits.analyst))
                 rewritten.add(lower)
             except EXPECTED as error:
@@ -198,17 +236,22 @@ def build_graph(run: Run):
     def set_check_fb(state):
         return {"flags": ["Set check skipped; theses were not compared."]}
 
-    # --- order: conviction never rises down the list -----------------------------
+    # --- order: conviction never rises down the list; record what agents changed --
     async def order(state, deadline):
         conviction = {b: r.page.conviction.level for b, r in state["results"].items()}
-        return {"final_order": order_final(state["selection"], state["analysis"].rankings, conviction)}
+        final = order_final(state["selection"], state["analysis"].rankings, conviction)
+        return {"final_order": final,
+                "baseline_diff": baseline_diff(final, pools(state), state["captain"],
+                                               state["analysis"], cfg),
+                "alternates": alternates(final, pools(state), state["analysis"])}
 
     graph = StateGraph(RunState)
     graph.add_node("intake", node(run, "intake", intake, intake_fb, limits.intake))
     graph.add_node("score", node(run, "score", score))
-    graph.add_node("pe_coverage", node(run, "pe_coverage", pool("PE")))
-    graph.add_node("strategic_coverage", node(run, "strategic_coverage", pool("Strategic")))
-    graph.add_node("captain", node(run, "captain", captain))
+    graph.add_node("pe_coverage", node(run, "pe_coverage", *coverage("PE"), limits.coverage))
+    graph.add_node("strategic_coverage", node(run, "strategic_coverage", *coverage("Strategic"),
+                                              limits.coverage))
+    graph.add_node("captain", node(run, "captain", captain, captain_fb, limits.captain))
     graph.add_node("analysts", node(run, "analysts", analysts, analysts_fb))
     graph.add_node("set_check", node(run, "set_check", set_check, set_check_fb))
     graph.add_node("order", node(run, "order", order))
@@ -231,7 +274,7 @@ def _after_intake(state: RunState) -> str:
 
 
 def _fallback_result(buyer: str, analysis: Analysis, reason: str) -> AnalystResult:
-    page = fallback_page(build_evidence(buyer, analysis))
+    page = fallback_page(build_evidence(buyer, analysis))  # numbers only; no notes needed
     return AnalystResult(page=page, notes=None, repairs=0, errors=[reason], fallback=True)
 
 

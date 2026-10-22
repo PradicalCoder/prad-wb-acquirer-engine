@@ -4,13 +4,14 @@ import time
 
 import pytest
 
+from fakes import pool_from_seeds as _pool_from_seeds
+from fakes import seeded as _seeded
+
 from acquirer_engine.agents.coverage import coverage_fallback, run_coverage, validate_pool
 from acquirer_engine.config import load_config
 from acquirer_engine.data import load_deals
 from acquirer_engine.evidence import analyze
 from acquirer_engine.llm import ChatTurn, LLMOutputInvalid
-from acquirer_engine.schemas import PECoveragePool, StrategicCoveragePool
-from acquirer_engine.tools import CoverageTools, run_seed_theses
 
 CFG = load_config()
 
@@ -21,31 +22,11 @@ def analysis():
 
 
 def seeded(analysis, buyer_type):
-    """The type's tools after the seeds ran, and {buyer: (thesis, deal IDs)} from the seeds."""
-    tools = CoverageTools(buyer_type, analysis, CFG)
-    found = {}
-    seeds = run_seed_theses(tools, CFG.default_target, CFG)
-    for seed in seeds:
-        for b in seed["result"]["buyers"]:
-            found.setdefault(b["acquirer"], (seed["thesis_id"], b["top_deal_ids"]))
-    return tools, seeds, found
+    return _seeded(analysis, buyer_type, CFG)
 
 
 def pool_from_seeds(analysis, buyer_type="PE", n=7, removals=(), **changes):
-    """A valid pool built only from what the seeds returned."""
-    _, seeds, found = seeded(analysis, buyer_type)
-    candidates = []
-    for name, (thesis, ids) in list(found.items())[:n]:
-        c = {"acquirer": name, "theses": [thesis], "evidence_ids": ids[:1], "note": "Fits.",
-             "ranker_rank": int(analysis.rankings.type_rank[name]), "score": 1.0}
-        if buyer_type == "Strategic":
-            c |= {"range_90": (0.03, 0.34), "primary_sector_proxy": None}
-        candidates.append(c)
-    log = [{"thesis_id": s["thesis_id"], "filters_used": s["filters"], "kept": True, "reason": "ok",
-            "buyers_found": [b["acquirer"] for b in s["result"]["buyers"]]} for s in seeds]
-    schema = PECoveragePool if buyer_type == "PE" else StrategicCoveragePool
-    return schema.model_validate({"candidates": candidates, "removals": list(removals),
-                                  "thesis_log": log, "reasoning_summary": "Built from seeds."} | changes)
+    return _pool_from_seeds(analysis, CFG, buyer_type, n, removals, **changes)
 
 
 class FakeClient:

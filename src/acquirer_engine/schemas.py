@@ -210,7 +210,7 @@ class StrategicCoveragePool(CoveragePool):
 class Pick(Model):
     acquirer: str
     buyer_type: Literal["PE", "Strategic"]
-    theses: list[ThesisId] = Field(min_length=1)
+    theses: list[ThesisId] = []    # empty for a buyer topped up from the ranking
     why_selected: str
     evidence_ids: list[str] = Field(min_length=1)
 

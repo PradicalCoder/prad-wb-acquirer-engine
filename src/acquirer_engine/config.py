@@ -78,6 +78,8 @@ class Coverage(Section):
     theses: dict[str, Thesis]
     rankings_top_k: int
     top_n: int
+    max_tool_calls: int
+    size_far: tuple[float, float]
 
 
 class Validation(Section):

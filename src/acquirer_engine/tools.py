@@ -23,7 +23,8 @@ from acquirer_engine.evidence import Analysis
 from acquirer_engine.schemas import DealSearch
 
 DEAL_COLUMNS = ["transaction_id", "acquirer", "deal_year", "sector", "deal_type",
-                "deal_size_mm", "outcome", "relevance"]
+                "deal_size_mm", "outcome", "relevance", "strategic_rationale_tags",
+                "synergy_pct_of_deal"]
 
 
 class AcquirerName(BaseModel):

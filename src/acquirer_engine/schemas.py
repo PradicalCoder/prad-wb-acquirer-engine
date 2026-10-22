@@ -188,14 +188,21 @@ class CoveragePool(Model):
         return self
 
 
+# The agent may return fewer candidates than POOL_MIN rather than pad the list
+# with misfits; code then tops the pool up from the ranking, so the final pool
+# always holds POOL_MIN to POOL_MAX buyers.
 class PECoveragePool(CoveragePool):
     THESES = get_args(PEThesis)
-    candidates: list[PECandidate] = Field(min_length=7, max_length=8)
+    POOL_MIN: ClassVar[int] = 7
+    POOL_MAX: ClassVar[int] = 8
+    candidates: list[PECandidate] = Field(min_length=1, max_length=8)
 
 
 class StrategicCoveragePool(CoveragePool):
     THESES = get_args(StrategicThesis)
-    candidates: list[StrategicCandidate] = Field(min_length=5, max_length=8)
+    POOL_MIN: ClassVar[int] = 5
+    POOL_MAX: ClassVar[int] = 8
+    candidates: list[StrategicCandidate] = Field(min_length=1, max_length=8)
 
 
 # --- Deal captain -------------------------------------------------------------

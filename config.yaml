@@ -231,6 +231,10 @@ coverage:
 
   rankings_top_k: 12   # how many ranked buyers each agent sees up front
   top_n: 10            # most buyers (or deals) one tool result lists
+  max_tool_calls: 8    # most tool calls run in the agent's tool turn
+  # A buyer whose median deal is below the first or above the second multiple
+  # of our EV, with no deal in our size band, is screened out (0.5x-5x = $100M-$1B).
+  size_far: [0.5, 5.0]
 
 
 # ---------------------------------------------------------------------------

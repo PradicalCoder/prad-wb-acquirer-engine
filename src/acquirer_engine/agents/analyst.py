@@ -13,7 +13,7 @@ import json
 import structlog
 from pydantic import BaseModel
 
-from acquirer_engine.agents import load_prompt
+from acquirer_engine.agents import cached_system, load_prompt, repair_turn
 from acquirer_engine.config import Config
 from acquirer_engine.evidence import EvidencePack
 from acquirer_engine.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
@@ -53,12 +53,12 @@ async def _plan(agent, pack_json, client, cfg, deadline) -> AnalystNotes:
                                   max_ability_risks=rule.max_ability_risks)
     messages = [{"role": "user", "content": f"Evidence pack:\n{pack_json}"}]
     try:
-        return await client.structured(agent=agent, profile="analyst_notes", system=_cached(system),
+        return await client.structured(agent=agent, profile="analyst_notes", system=cached_system(system),
                                        messages=messages, schema=AnalystNotes,
                                        prompt_version=version, deadline=deadline)
     except LLMOutputInvalid as error:
-        messages += _repair_turn(error.raw_text, [str(error)])
-        return await client.structured(agent=agent, profile="analyst_notes", system=_cached(system),
+        messages += repair_turn(error.raw_text, [str(error)])
+        return await client.structured(agent=agent, profile="analyst_notes", system=cached_system(system),
                                        messages=messages, schema=AnalystNotes,
                                        prompt_version=version, deadline=deadline)
 
@@ -89,7 +89,7 @@ async def _write(agent, pack, pack_json, notes, client, cfg, deadline, extra=Non
     for attempt in range(rules.max_repairs + 1):
         try:
             draft = await client.structured(agent=agent, profile="analyst_write",
-                                            system=_cached(system), messages=messages,
+                                            system=cached_system(system), messages=messages,
                                             schema=OnePagerDraft, prompt_version=version,
                                             deadline=deadline)
             raw, errors = draft.model_dump_json(), validate_page(draft, pack, notes, rules)
@@ -99,26 +99,11 @@ async def _write(agent, pack, pack_json, notes, client, cfg, deadline, extra=Non
             return AnalystResult(page=OnePage(**draft.model_dump()), notes=notes,
                                  repairs=attempt, errors=[], fallback=False)
         log.info("analyst.repair", agent=agent, attempt=attempt + 1, errors=errors)
-        messages = messages + _repair_turn(raw, errors)
+        messages = messages + repair_turn(raw, errors)
 
     log.warning("analyst.fallback", agent=agent, reason="page still failing checks")
     return AnalystResult(page=fallback_page(pack), notes=notes, repairs=rules.max_repairs,
                          errors=errors, fallback=True)
-
-
-def _cached(system: str) -> list[dict]:
-    """The system prompt as one block marked for Anthropic prompt caching: all
-    ten analysts send the same text, so later calls can read it from cache."""
-    return [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
-
-
-def _repair_turn(previous_answer: str, errors: list[str]) -> list[dict]:
-    """The model's last answer, then the specific problems to fix."""
-    listed = "\n".join(f"- {e}" for e in errors)
-    return [
-        {"role": "assistant", "content": previous_answer},
-        {"role": "user", "content": f"Fix these problems and return the full answer again:\n{listed}"},
-    ]
 
 
 # --- Evidence-only page ------------------------------------------------------------

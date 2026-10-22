@@ -104,7 +104,8 @@ def test_pe_pool_accepts_seven():
 
 
 @pytest.mark.parametrize("pool", [
-    pe_pool(SEVEN[:6]),                                                     # too few
+    pe_pool([]),                                                            # empty
+    pe_pool(SEVEN + [pe_candidate("Firm 7"), pe_candidate("Firm 8")]),      # more than 8
     pe_pool(SEVEN[:6] + [pe_candidate("Firm 0")]),                          # duplicate buyer
     pe_pool(SEVEN[:6] + [pe_candidate("Firm 9", buyer_type="Strategic")]),  # wrong buyer type
     pe_pool(SEVEN[:6] + [pe_candidate("Firm 9", theses=["S1"])]),           # strategic thesis

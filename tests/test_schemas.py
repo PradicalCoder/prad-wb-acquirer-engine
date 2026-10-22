@@ -1,5 +1,7 @@
 """Tests for the agent output schemas: each rule rejects a bad answer."""
 
+from typing import get_args
+
 import pytest
 from pydantic import ValidationError
 
@@ -13,20 +15,32 @@ from acquirer_engine.schemas import (
     OnePagerDraft,
     PECoveragePool,
     StrategicCandidate,
+    TargetField,
 )
 
 # --- Intake -----------------------------------------------------------------
 
 TARGET = TargetProfile(sector="Healthcare Services", ev_mm=200, ownership=["Private", "PE-Backed"])
-SOURCES = {
-    "sector": {"provenance": "given", "quote": "Sector: Healthcare Services"},
-    "ev_mm": {"provenance": "given", "quote": "~$200M EV"},
-    "ownership": {"provenance": "derived", "quote": "private"},
-}
+SOURCES = [
+    {"field": "sector", "provenance": "given", "quote": "Sector: Healthcare Services"},
+    {"field": "ev_mm", "provenance": "given", "quote": "~$200M EV"},
+    {"field": "ownership", "provenance": "derived", "quote": "private"},
+]
 
 
 def test_intake_accepts_sourced_fields():
-    assert IntakeResult(target=TARGET, sources=SOURCES).sources["ownership"].provenance == "derived"
+    assert IntakeResult(target=TARGET, sources=SOURCES).source("ownership").provenance == "derived"
+
+
+def test_target_fields_literal_matches_target_profile():
+    assert set(get_args(TargetField)) == set(TargetProfile.model_fields)
+
+
+def test_sources_reach_the_api_as_a_list():
+    """A dict field would become an object with no allowed keys (only {} valid)."""
+    from langchain_anthropic.chat_models import _convert_to_anthropic_output_config_format
+    schema = _convert_to_anthropic_output_config_format(IntakeResult)["schema"]
+    assert schema["properties"]["sources"]["type"] == "array"
 
 
 def test_intake_sets_exactly_one_of_target_and_stop_reason():
@@ -38,10 +52,11 @@ def test_intake_sets_exactly_one_of_target_and_stop_reason():
 
 
 @pytest.mark.parametrize("sources", [
-    {k: v for k, v in SOURCES.items() if k != "ownership"},               # filled field, no source
-    SOURCES | {"ev_mm": {"provenance": "given"}},                          # given, but no quote
-    SOURCES | {"revenue_mm": {"provenance": "estimated", "quote": "x"}},   # estimate with a quote
-    SOURCES | {"buyer": {"provenance": "given", "quote": "x"}},            # not a target field
+    SOURCES[:2],                                                               # ownership has no source
+    SOURCES + [{"field": "ev_mm", "provenance": "given", "quote": "$200M"}],   # field sourced twice
+    SOURCES[:2] + [{"field": "ownership", "provenance": "derived"}],           # derived, but no quote
+    SOURCES + [{"field": "revenue_mm", "provenance": "estimated", "quote": "x"}],  # estimate with quote
+    SOURCES + [{"field": "buyer", "provenance": "given", "quote": "x"}],       # not a target field
 ])
 def test_intake_rejects_bad_sources(sources):
     with pytest.raises(ValidationError):

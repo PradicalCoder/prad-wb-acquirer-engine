@@ -60,9 +60,9 @@ async def run_intake(text: str, client: LLMClient, cfg: Config, deals: pd.DataFr
 def quote_errors(result: IntakeResult, text: str) -> list[str]:
     """Every quote must appear in the request (ignoring case and spacing)."""
     haystack = _normalize(text)
-    return [f"the quote for {field} ('{source.quote}') does not appear in the request; "
+    return [f"the quote for {source.field} ('{source.quote}') does not appear in the request; "
             f"copy the exact words, or leave the field empty"
-            for field, source in result.sources.items()
+            for source in result.sources
             if source.quote and _normalize(source.quote) not in haystack]
 
 

@@ -31,12 +31,12 @@ def analysis(deals):
 
 
 def intake_answer():
-    return IntakeResult(target=CFG.default_target, sources={
-        "sector": {"provenance": "given", "quote": "Sector: Healthcare Services"},
-        "ev_mm": {"provenance": "given", "quote": "~$200M EV"},
-        "ownership": {"provenance": "derived", "quote": "private"},
-        "margin_band": {"provenance": "derived", "quote": "strong EBITDA margins"},
-    })
+    return IntakeResult(target=CFG.default_target, sources=[
+        {"field": "sector", "provenance": "given", "quote": "Sector: Healthcare Services"},
+        {"field": "ev_mm", "provenance": "given", "quote": "~$200M EV"},
+        {"field": "ownership", "provenance": "derived", "quote": "private"},
+        {"field": "margin_band", "provenance": "derived", "quote": "strong EBITDA margins"},
+    ])
 
 
 class FakeClient:

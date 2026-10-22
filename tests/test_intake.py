@@ -23,14 +23,22 @@ def answer(**changes):
     """The correct reading of the default request."""
     fields = {
         "target": CONFIG.default_target.model_dump(),
-        "sources": {
-            "sector": {"provenance": "given", "quote": "Sector: Healthcare Services"},
-            "ev_mm": {"provenance": "given", "quote": "~$200M EV"},
-            "ownership": {"provenance": "derived", "quote": "private"},
-            "margin_band": {"provenance": "derived", "quote": "strong EBITDA margins"},
-        },
+        "sources": SOURCES,
     }
     return IntakeResult.model_validate(fields | changes)
+
+
+SOURCES = [
+    {"field": "sector", "provenance": "given", "quote": "Sector: Healthcare Services"},
+    {"field": "ev_mm", "provenance": "given", "quote": "~$200M EV"},
+    {"field": "ownership", "provenance": "derived", "quote": "private"},
+    {"field": "margin_band", "provenance": "derived", "quote": "strong EBITDA margins"},
+]
+
+
+def with_quote(field, quote):
+    """SOURCES with one field's quote replaced."""
+    return [s | {"quote": quote} if s["field"] == field else s for s in SOURCES]
 
 
 class FakeClient:
@@ -56,8 +64,7 @@ async def test_reads_the_default_request(deals):
 
 
 async def test_invented_quote_is_repaired(deals):
-    invented = answer(sources=answer().sources | {
-        "margin_band": {"provenance": "derived", "quote": "best-in-class margins"}})
+    invented = answer(sources=with_quote("margin_band", "best-in-class margins"))
     client = FakeClient(invented, answer())
     outcome = await intake(client, deals)
     assert outcome.target == CONFIG.default_target
@@ -65,8 +72,7 @@ async def test_invented_quote_is_repaired(deals):
 
 
 async def test_still_wrong_after_repair_raises(deals):
-    invented = answer(sources=answer().sources | {
-        "ev_mm": {"provenance": "given", "quote": "$250M"}})
+    invented = answer(sources=with_quote("ev_mm", "$250M"))
     with pytest.raises(LLMOutputInvalid):
         await intake(FakeClient(invented, invented), deals)
 
@@ -82,8 +88,8 @@ async def test_warnings(deals):
     huge = answer(
         target=CONFIG.default_target.model_copy(update={"ev_mm": 20000.0, "ownership": None,
                                                          "margin_band": None}).model_dump(),
-        sources={"sector": {"provenance": "given", "quote": "healthcare services"},
-                 "ev_mm": {"provenance": "given", "quote": "$20B"}},
+        sources=[{"field": "sector", "provenance": "given", "quote": "healthcare services"},
+                 {"field": "ev_mm", "provenance": "given", "quote": "$20B"}],
         state_mentioned="Texas",
     )
     outcome = await intake(FakeClient(huge), deals, text=text)

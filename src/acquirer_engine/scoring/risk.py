@@ -68,6 +68,12 @@ class Conviction(BaseModel):
     strong_deal_ids: list[str]
     latest_strong_year: int | None
     ability_risks: list[str]
+    # Counts and thresholds, spelled out so a write-up can cite them.
+    strong_deal_count: int
+    ability_risk_count: int
+    strong_relevance: float      # a deal at or above this is a strong precedent
+    recent_year: int             # willingness needs a strong deal this year or later
+    max_ability_risks: int       # ability is High at or below this many fired risks
 
 
 def risk_table(
@@ -170,4 +176,9 @@ def assess_conviction(
         strong_deal_ids=sorted(strong.transaction_id),
         latest_strong_year=latest,
         ability_risks=ability_risks,
+        strong_deal_count=len(strong),
+        ability_risk_count=len(ability_risks),
+        strong_relevance=cfg.strong_relevance,
+        recent_year=cfg.recent_year,
+        max_ability_risks=cfg.max_ability_risks,
     )

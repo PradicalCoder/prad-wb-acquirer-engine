@@ -39,9 +39,18 @@ def _no_duplicates(names: list[str], what: str) -> None:
 
 # --- Intake -----------------------------------------------------------------
 
-class FieldSource(Model):
-    """Where one target field came from."""
+TargetField = Literal[
+    "sector", "ev_mm", "ownership", "region", "margin_band", "revenue_mm", "ebitda_mm",
+]
 
+
+class FieldSource(Model):
+    """Where one target field came from.
+
+    Sources are a list of these (not a dict keyed by field name): structured
+    outputs only allow objects with fixed keys, so a dict could only ever be {}."""
+
+    field: TargetField
     provenance: Literal["given", "derived", "estimated"]
     # given     = stated in the request ("$200M")
     # derived   = a stated word mapped by a fixed rule ("private" -> [Private, PE-Backed])
@@ -64,7 +73,7 @@ class IntakeResult(Model):
 
     target: TargetProfile | None = None
     stop_reason: str | None = None
-    sources: dict[str, FieldSource] = {}  # keyed by TargetProfile field name
+    sources: list[FieldSource] = []       # one per filled target field
     state_mentioned: str | None = None    # e.g. "Texas"; kept for the report, not mapped to a region
 
     @model_validator(mode="after")
@@ -77,15 +86,16 @@ class IntakeResult(Model):
     def every_filled_field_has_a_source(self):
         if self.target is None:
             return self
-        fields = set(TargetProfile.model_fields)
-        unknown = set(self.sources) - fields
-        if unknown:
-            raise ValueError(f"sources for unknown fields: {sorted(unknown)}")
-        filled = {name for name in fields if getattr(self.target, name) is not None}
-        missing = filled - set(self.sources)
+        named = [source.field for source in self.sources]
+        _no_duplicates(named, "source field")
+        filled = {name for name in TargetProfile.model_fields if getattr(self.target, name) is not None}
+        missing = filled - set(named)
         if missing:
             raise ValueError(f"no source given for: {sorted(missing)}")
         return self
+
+    def source(self, field: str) -> "FieldSource | None":
+        return next((s for s in self.sources if s.field == field), None)
 
 
 # --- Coverage agents ----------------------------------------------------------

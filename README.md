@@ -391,4 +391,4 @@ Dockerfile                 Python 3.12, pinned versions from requirements.lock
 
 ## 15. Demo
 
-Recorded walkthrough: *(link to be added)*
+Recorded walkthrough: https://www.loom.com/share/3d210a0485f243b591f03b7ba7b547ac
